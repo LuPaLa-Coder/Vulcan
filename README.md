@@ -26,13 +26,13 @@ Disponibile in due modalità: **Skill** (agent framework) e **Agent** (VS Code C
 Installazione globale tramite CLI:
 
 ```bash
-npx skills add PaoEng/Vulcan --skill Vulcan -g -y
+npx skills add ./Vulcan --skill Vulcan -g -y
 ```
 
 Oppure per il solo progetto corrente (senza `-g`):
 
 ```bash
-npx skills add PaoEng/Vulcan --skill Vulcan -y
+npx skills add ./Vulcan --skill Vulcan -y
 ```
 
 Una volta installata, la skill viene caricata on-demand dall'agente host quando necessario.
