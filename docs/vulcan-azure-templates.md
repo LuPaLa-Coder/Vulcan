@@ -1,6 +1,6 @@
 # Vulcan Azure Templates
 
-Template di riferimento per sviluppo cloud-native su **Microsoft Azure** con C# e .NET 8+.
+Template di riferimento per sviluppo cloud-native su **Microsoft Azure** con C# e .NET 10+ (.NET 8 LTS supportato per progetti esistenti).
 
 ---
 
@@ -701,7 +701,7 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
     serverFarmId: appServicePlan.id
     httpsOnly: true
     siteConfig: {
-      linuxFxVersion: 'DOTNET-ISOLATED|8.0'
+      linuxFxVersion: 'DOTNET-ISOLATED|10.0'
       minTlsVersion: '1.2'
       ftpsState: 'Disabled'
       http20Enabled: true
@@ -758,11 +758,11 @@ output managedIdentityClientId string = managedIdentity.properties.clientId
 
 ```dockerfile
 # Dockerfile (Azure Functions Isolated Worker)
-FROM mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated8.0 AS base
+FROM mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated10.0 AS base
 WORKDIR /home/site/wwwroot
 EXPOSE 80
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY ["src/MyFunction/MyFunction.csproj", "MyFunction/"]
@@ -890,7 +890,7 @@ on:
 
 env:
   AZURE_FUNCTIONAPP_PACKAGE_PATH: src/MyFunction
-  DOTNET_VERSION: 8.0.x
+  DOTNET_VERSION: 10.0.x
 
 jobs:
   test:

@@ -1,6 +1,6 @@
 # Vulcan AWS Templates
 
-Template di riferimento per sviluppo cloud-native su **Amazon Web Services** con C# e .NET 8+.
+Template di riferimento per sviluppo cloud-native su **Amazon Web Services** con C# e .NET 10+ (.NET 8 LTS supportato per progetti esistenti).
 
 ---
 
@@ -388,7 +388,7 @@ public class MyServiceStack : Stack
         var commonLayer = new LayerVersion(this, "CommonLayer", new LayerVersionProps
         {
             Code = Code.FromAsset("src/layers/common"),
-            CompatibleRuntimes = new[] { Runtime.DOTNET_8 },
+            CompatibleRuntimes = new[] { Runtime.DOTNET_10 },
             Description = "Common dependencies layer"
         });
 
@@ -396,9 +396,9 @@ public class MyServiceStack : Stack
         var httpFunction = new Function(this, "HttpFunction", new FunctionProps
         {
             FunctionName = "my-service-http",
-            Runtime = Runtime.DOTNET_8,
+            Runtime = Runtime.DOTNET_10,
             Handler = "MyLambda::MyLambda.Function::FunctionHandler",
-            Code = Code.FromAsset("src/MyLambda/bin/Release/net8.0"),
+            Code = Code.FromAsset("src/MyLambda/bin/Release/net10.0"),
             Role = lambdaRole,
             Timeout = Duration.Seconds(30),
             MemorySize = 512,
@@ -420,9 +420,9 @@ public class MyServiceStack : Stack
         var workerFunction = new Function(this, "WorkerFunction", new FunctionProps
         {
             FunctionName = "my-service-worker",
-            Runtime = Runtime.DOTNET_8,
+            Runtime = Runtime.DOTNET_10,
             Handler = "MyWorker::MyWorker.SqsWorkerFunction::FunctionHandler",
-            Code = Code.FromAsset("src/MyWorker/bin/Release/net8.0"),
+            Code = Code.FromAsset("src/MyWorker/bin/Release/net10.0"),
             Role = lambdaRole,
             Timeout = Duration.Seconds(300),
             MemorySize = 256,
@@ -539,7 +539,7 @@ Description: My Service — Lambda + API Gateway + DynamoDB
 
 Globals:
   Function:
-    Runtime: dotnet8
+    Runtime: dotnet10
     Timeout: 30
     MemorySize: 512
     Tracing: Active
@@ -725,10 +725,10 @@ echo "LocalStack setup complete."
 
 ```dockerfile
 # Dockerfile (Lambda Container Image)
-FROM public.ecr.aws/lambda/dotnet:8 AS base
+FROM public.ecr.aws/lambda/dotnet:10 AS base
 WORKDIR /var/task
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY ["src/MyLambda/MyLambda.csproj", "MyLambda/"]
@@ -761,7 +761,7 @@ on:
 
 env:
   AWS_REGION: eu-west-1
-  DOTNET_VERSION: 8.0.x
+  DOTNET_VERSION: 10.0.x
 
 jobs:
   test:
