@@ -5,7 +5,7 @@
 Installa Vulcan automaticamente su tutti i coding agent rilevati:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/PaoEng/Vulcan/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/LuPala_Coder/Vulcan/main/install.sh | bash
 ```
 
 Lo script:
@@ -17,7 +17,7 @@ Lo script:
 
 ```bash
 # Prima clona il repo
-git clone https://github.com/PaoEng/Vulcan.git
+git clone https://github.com/LuPala_Coder/Vulcan.git
 cd Vulcan
 
 # Solo per Claude Code
@@ -161,4 +161,4 @@ Poi apri il tuo coding tool e seleziona **Vulcan** dal menu agent.
 
 ---
 
-**Repository**: https://github.com/PaoEng/Vulcan.git
+**Repository**: https://github.com/LuPala_Coder/Vulcan.git

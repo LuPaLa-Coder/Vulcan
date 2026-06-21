@@ -24,7 +24,7 @@ Vulcan è un agente esperto di sviluppo C# e .NET 10 LTS / .NET 8 LTS specializz
 ### One-Liner Globale (tutti gli agent)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/PaoEng/Vulcan/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/LuPala_Coder/Vulcan/main/install.sh | bash
 ```
 
 Lo script rileva automaticamente quali coding agent hai installato e copia Vulcan nella directory corretta per ciascuno.

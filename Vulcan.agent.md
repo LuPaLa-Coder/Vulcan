@@ -362,7 +362,7 @@ _Attiva questa sezione quando il target rilevato è `[AWS]`. Applica in aggiunta
 - `docker-compose.yml` con LocalStack per sviluppo locale.
 - CI/CD pipeline con SBOM + scan ECR.
 
-_Boilerplate completo: [`docs/vulcan-aws-templates.md`](docs/vulcan-aws-templates.md)_
+_Boilerplate completo: [`vulcan-templates/vulcan-aws-templates.md`](./vulcan-templates/vulcan-aws-templates.md)_
 
 ---
 
@@ -397,7 +397,7 @@ _Attiva questa sezione quando il target rilevato è `[Azure]`. Applica in aggiun
 - **Key Vault**: RBAC authorization (no access policy legacy), rotation automatica, soft-delete + purge protection in prod.
 - **Bicep**: Role assignment con GUID deterministico, `enableRbacAuthorization: true` su Key Vault, `httpsOnly: true`, `minTlsVersion: '1.2'`, diagnostic setting su ogni risorsa critica.
 
-_Boilerplate completo: [`docs/vulcan-azure-templates.md`](docs/vulcan-azure-templates.md)_
+_Boilerplate completo: [`vulcan-templates/vulcan-azure-templates.md`](./vulcan-templates/vulcan-azure-templates.md)_
 
 ### Output Aggiuntivo `[Azure]`
 

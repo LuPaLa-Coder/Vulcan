@@ -5,7 +5,7 @@
 #  Claude Code · OpenCode · GitHub Copilot · Cursor · Windsurf · Codex
 #
 #  Uso:
-#    curl -fsSL https://raw.githubusercontent.com/PaoEng/Vulcan/main/install.sh | bash
+#    curl -fsSL https://raw.githubusercontent.com/LuPala_Coder/Vulcan/main/install.sh | bash
 #    ./install.sh                    # installa in tutti gli agent rilevati
 #    ./install.sh --local            # installa solo nella directory corrente
 #    ./install.sh --agent claude     # installa solo per Claude Code
@@ -25,10 +25,21 @@ RED='\033[0;31m'   GREEN='\033[0;32m'   YELLOW='\033[1;33m'
 CYAN='\033[0;36m'  BOLD='\033[1m'      NC='\033[0m'
 
 # ── Configurazione ───────────────────────────────────────────────────────────
-VULCAN_VERSION="1.2.0"
+VULCAN_VERSION="2.0.0"
 AGENT_FILE="Vulcan.agent.md"
-REPO_URL="https://raw.githubusercontent.com/PaoEng/Vulcan/main"
-AGENT_DESC="Vulcan C# Agent — sviluppo C# moderno (.NET 10 LTS / .NET 8 LTS), cloud-native (AWS/Azure) e provider-agnostic con Serilog + OpenTelemetry, LiteDB/MongoDB, supply-chain hardened e pattern architetturali puliti. Usare per GENERARE codice C#; per CODE REVIEW usare Anubis."
+REPO_URL="https://raw.githubusercontent.com/LuPala_Coder/Vulcan/main"
+AGENT_DESC='Vulcan C# Agent — sviluppo C# moderno (.NET 10 LTS / .NET 8 LTS), cloud-native (AWS/Azure) e provider-agnostic con Serilog + OpenTelemetry, LiteDB/MongoDB, supply-chain hardened e pattern architetturali puliti. Usare per GENERARE codice C#; per CODE REVIEW usare Anubis.'
+
+# Template files da installare — vanno in una subdirectory per evitare
+# che OpenCode/Copilot/Cursor li interpretino come agent separati
+TEMPLATE_DIR="vulcan-templates"
+TEMPLATE_FILES=(
+    "vulcan-aws-templates.md"
+    "vulcan-azure-templates.md"
+)
+
+# Cache per il corpo dell'agente (scaricato/letto una volta sola)
+_AGENT_BODY=""
 
 # ── Banner ───────────────────────────────────────────────────────────────────
 print_banner() {
@@ -54,6 +65,12 @@ detect_os() {
 # Prova prima locale, poi scarica da GitHub.
 
 get_agent_body() {
+    # Usa la cache se già popolata
+    if [[ -n "$_AGENT_BODY" ]]; then
+        echo "$_AGENT_BODY"
+        return 0
+    fi
+
     local src=""
 
     if [[ -f "$SCRIPT_DIR/$AGENT_FILE" ]]; then
@@ -79,11 +96,49 @@ get_agent_body() {
     fi
 
     # Estrai il corpo: salta tutto fino al secondo --- (fine frontmatter YAML)
-    awk 'BEGIN { c=0 } /^---$/ { c++; next } c >= 2' "$src"
+    _AGENT_BODY=$(awk 'BEGIN { c=0 } /^---$/ { c++; next } c >= 2' "$src")
 
     # Pulizia se è stato scaricato in tmp
     if [[ "$src" != "$SCRIPT_DIR/$AGENT_FILE" ]]; then
         rm -f "$src"
+    fi
+
+    echo "$_AGENT_BODY"
+}
+
+# ── Template Files ───────────────────────────────────────────────────────────
+# Copia i file template (AWS, Azure) nella directory dell'agente.
+# Prova prima dal repo locale (docs/), poi scarica da GitHub.
+
+copy_templates() {
+    local target_dir="$1"
+    local tmpl_dir="${target_dir}/${TEMPLATE_DIR}"
+    mkdir -p "$tmpl_dir"
+    local copied=0
+
+    for tmpl in "${TEMPLATE_FILES[@]}"; do
+        local dest="${tmpl_dir}/${tmpl}"
+
+        # Backup se richiesto
+        if [[ "$DO_BACKUP" == "true" ]] && [[ -f "$dest" ]]; then
+            cp "$dest" "${dest}.backup-$(date +%Y%m%d-%H%M%S)"
+        fi
+
+        if [[ -f "$SCRIPT_DIR/docs/$tmpl" ]]; then
+            cp "$SCRIPT_DIR/docs/$tmpl" "$dest"
+        elif command -v curl &>/dev/null; then
+            curl -fsSL "${REPO_URL}/docs/${tmpl}" -o "$dest" || { rm -f "$dest"; continue; }
+        elif command -v wget &>/dev/null; then
+            wget -q "${REPO_URL}/docs/${tmpl}" -O "$dest" || { rm -f "$dest"; continue; }
+        else
+            continue
+        fi
+
+        ((copied++)) || true
+    done
+
+    if [[ $copied -gt 0 ]]; then
+        echo -e "  ${GREEN}✓${NC} ${copied} template → ${tmpl_dir}/"
     fi
 }
 
@@ -97,37 +152,29 @@ get_frontmatter() {
     local platform="$1"  # claude | opencode | generic
 
     case "$platform" in
-        claude)
-            cat <<'EOF'
----
-name: Vulcan
-description: "Vulcan C# Agent — sviluppo C# moderno (.NET 10 LTS / .NET 8 LTS), cloud-native (AWS/Azure) e provider-agnostic con Serilog + OpenTelemetry, LiteDB/MongoDB, supply-chain hardened e pattern architetturali puliti. Usare per GENERARE codice C#; per CODE REVIEW usare Anubis."
----
-EOF
+        claude|generic)
+            echo "---"
+            echo "name: Vulcan"
+            echo "description: \"${AGENT_DESC}\""
+            echo "---"
             ;;
         opencode)
+            echo "---"
+            echo "description: \"${AGENT_DESC}\""
+            echo "mode: all"
             cat <<'EOF'
----
-description: "Vulcan C# Agent — sviluppo C# moderno (.NET 10 LTS / .NET 8 LTS), cloud-native (AWS/Azure) e provider-agnostic con Serilog + OpenTelemetry, LiteDB/MongoDB, supply-chain hardened e pattern architetturali puliti. Usare per GENERARE codice C#; per CODE REVIEW usare Anubis."
-mode: all
 permission:
   read: allow
+  edit: allow
   glob: allow
   grep: allow
-  edit: allow
-  write: allow
+  list: allow
   bash: allow
+  task: allow
   webfetch: allow
   websearch: allow
-  task: allow
----
-EOF
-            ;;
-        generic)
-            cat <<'EOF'
----
-name: Vulcan
-description: "Vulcan C# Agent — sviluppo C# moderno (.NET 10 LTS / .NET 8 LTS), cloud-native (AWS/Azure) e provider-agnostic con Serilog + OpenTelemetry, LiteDB/MongoDB, supply-chain hardened e pattern architetturali puliti. Usare per GENERARE codice C#; per CODE REVIEW usare Anubis."
+  lsp: allow
+  skill: allow
 ---
 EOF
             ;;
@@ -137,7 +184,7 @@ EOF
 # Mappa il nome dell'agente al tipo di piattaforma per il frontmatter
 get_platform() {
     case "$1" in
-        "OpenCode"|"OpenCode (XDG)") echo "opencode" ;;
+        "OpenCode") echo "opencode" ;;
         "Claude Code")               echo "claude" ;;
         *)                           echo "generic" ;;
     esac
@@ -160,13 +207,10 @@ get_agent_dirs() {
                 fi
             fi
 
-            # OpenCode — ~/.opencode/agents/ e XDG
+            # OpenCode — la directory ufficiale è ~/.config/opencode/agents/ (XDG)
             if [[ -z "$agent" || "$agent" == "opencode" ]]; then
-                if [[ -d "$HOME/.opencode" ]]; then
-                    printf '%s|%s\n' "$HOME/.opencode/agents" "OpenCode"
-                fi
                 if [[ -d "$xdg_config/opencode/agents" ]]; then
-                    printf '%s|%s\n' "$xdg_config/opencode/agents" "OpenCode (XDG)"
+                    printf '%s|%s\n' "$xdg_config/opencode/agents" "OpenCode"
                 fi
             fi
 
@@ -206,7 +250,7 @@ get_agent_dirs() {
                 printf '%s|%s\n' "$appdata/Claude/agents" "Claude Code"
             fi
             if [[ -z "$agent" || "$agent" == "opencode" ]]; then
-                printf '%s|%s\n' "$HOME/.opencode/agents" "OpenCode"
+                printf '%s|%s\n' "$appdata/opencode/agents" "OpenCode"
             fi
             if [[ -z "$agent" || "$agent" == "copilot" ]]; then
                 printf '%s|%s\n' "$HOME/.copilot/agents" "GitHub Copilot"
@@ -228,8 +272,14 @@ install_agent() {
     local platform
     platform=$(get_platform "$agent_name")
 
+    # Per OpenCode il filename diventa il nome agente nell'UI. Usiamo 'vulcan.md'.
+    local agent_filename="$AGENT_FILE"
+    if [[ "$platform" == "opencode" ]]; then
+        agent_filename="vulcan.md"
+    fi
+
     mkdir -p "$target_dir"
-    local dest="${target_dir}/${AGENT_FILE}"
+    local dest="${target_dir}/${agent_filename}"
 
     # Backup solo se richiesto esplicitamente con --backup
     if [[ "$DO_BACKUP" == "true" ]] && [[ -f "$dest" ]]; then
@@ -248,6 +298,7 @@ install_agent() {
     if [[ -s "$dest" ]]; then
         echo -e "  ${GREEN}✓${NC} Vulcan installato per ${BOLD}${agent_name}${NC} (${platform})"
         echo -e "          → ${dest}"
+        copy_templates "$target_dir"
         return 0
     else
         echo -e "  ${RED}✗${NC} Generazione fallita per ${agent_name}"
@@ -259,10 +310,20 @@ install_agent() {
 uninstall_agent() {
     local target_dir="$1"
     local agent_name="$2"
-    local dest="${target_dir}/${AGENT_FILE}"
+    local platform
+    platform=$(get_platform "$agent_name")
+
+    # Per OpenCode il file si chiama 'vulcan.md', per gli altri 'Vulcan.agent.md'
+    local agent_filename="$AGENT_FILE"
+    if [[ "$platform" == "opencode" ]]; then
+        agent_filename="vulcan.md"
+    fi
+    local dest="${target_dir}/${agent_filename}"
 
     if [[ -f "$dest" ]]; then
         rm "$dest"
+        # Rimuovi anche la directory dei template
+        rm -rf "${target_dir}/${TEMPLATE_DIR}"
         echo -e "  ${GREEN}✓${NC} Vulcan rimosso da ${BOLD}${agent_name}${NC}"
     else
         echo -e "  ${YELLOW}○${NC} Vulcan non presente per ${agent_name}"
@@ -286,6 +347,7 @@ install_local() {
     if [[ -s "$dest" ]]; then
         echo -e "  ${GREEN}✓${NC} Vulcan installato localmente"
         echo -e "          → ${dest}"
+        copy_templates "$(dirname "$dest")"
     else
         echo -e "  ${RED}✗${NC} Installazione locale fallita"
         return 1
@@ -371,6 +433,9 @@ main() {
 
     # ── Modalità: Local ──────────────────────────────────────────────────
     if [[ "$mode" == "local" ]]; then
+        if [[ -n "$target_agent" ]]; then
+            echo -e "${YELLOW}⚠${NC} --local e --agent sono mutualmente esclusivi. --local installa nella directory corrente."
+        fi
         echo -e "${BOLD}Installazione locale di Vulcan${NC}"
         echo ""
         install_local
