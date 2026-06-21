@@ -95,7 +95,7 @@ cp docs/vulcan-azure-templates.md ~/.claude/agents/vulcan-templates/
 
 ### Required
 - **Un coding agent compatibile**: Claude Code, OpenCode, GitHub Copilot, Cursor, Windsurf, o Codex
-- **.NET SDK 8.0+** (o 9.0+ per feature specifiche)
+- **.NET SDK 10.0+** (LTS, GA novembre 2025)
   ```bash
   dotnet --version
   ```
@@ -174,7 +174,7 @@ Poi apri il tuo coding tool e seleziona l'agente Vulcan appropriato dal menu.
 
 ### Il codice generato non compila
 
-- Assicurati di avere .NET 8.0+ installato: `dotnet --version`
+- Assicurati di avere .NET 10.0+ installato: `dotnet --version`
 - Esegui `dotnet restore` nella directory del progetto generato
 - Controlla il target framework nei file `.csproj`
 
@@ -186,7 +186,7 @@ Poi apri il tuo coding tool e seleziona l'agente Vulcan appropriato dal menu.
 
 ### Migrazione da Vulcan v2 (legacy)
 
-Se avevi installato `Vulcan.agent.md` (v1/v2), l'installer v3.0 lo rimuove automaticamente. I tre nuovi agenti sostituiscono completamente il vecchio agente unificato. Se vuoi mantenere il vecchio agente, rinominalo prima di eseguire l'installer.
+Se avevi installato `Vulcan.agent.md` (v1/v2), l'installer v3.1 lo rimuove automaticamente. I tre nuovi agenti sostituiscono completamente il vecchio agente unificato. Se vuoi mantenere il vecchio agente, rinominalo prima di eseguire l'installer.
 
 ---
 

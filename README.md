@@ -2,7 +2,7 @@
 
 **Modern C# Development — Three Specialized Agents for Every Cloud Target**
 
-Vulcan è una famiglia di tre agenti specializzati per lo sviluppo C# e .NET 8 LTS / .NET 9, ciascuno ottimizzato per un target specifico:
+Vulcan è una famiglia di tre agenti specializzati per lo sviluppo C# e .NET 10 LTS, ciascuno ottimizzato per un target specifico:
 
 | Agente | Target | File |
 |---|---|---|
@@ -21,7 +21,7 @@ Dopo l'analisi del manifesto Vulcan v2 (47KB), abbiamo identificato che un promp
 - **Applicazione inconsistente**: regole generiche e cloud-specifiche competono
 - **Token sprecati**: il modello processa regole AWS anche quando lavori su Azure
 
-La soluzione: **tre agenti specializzati, invocati on-demand**. Ogni agente è completo e auto-sufficiente per il suo target, ma snello (~15-20KB invece di 47KB).
+La soluzione: **tre agenti specializzati, invocati on-demand**. Ogni agente è un motore decisionale auto-sufficiente per il suo target: Core 20KB, AWS/Azure 12KB ciascuno (vs 47KB del manifesto monolitico v2).
 
 ---
 
@@ -138,7 +138,7 @@ Vulcan/
 ├── Vulcan.Core.agent.md          # Agente Generic/.NET (provider-agnostic)
 ├── Vulcan.AWS.agent.md           # Agente AWS cloud-native
 ├── Vulcan.Azure.agent.md         # Agente Azure cloud-native
-├── install.sh                    # Script di installazione globale (v3.0)
+├── install.sh                    # Script di installazione globale (v3.1)
 ├── README.md
 └── docs/
     ├── installation.md
@@ -210,9 +210,9 @@ Ogni agente Vulcan genera:
 - **[Examples](./docs/examples.md)** — Scenari real-world
 - **[AWS Templates](./docs/vulcan-aws-templates.md)** — Boilerplate Lambda, CDK, Well-Architected
 - **[Azure Templates](./docs/vulcan-azure-templates.md)** — Boilerplate Functions, Bicep, Best Practices
-- **[Vulcan-Core Agent](./Vulcan.Core.agent.md)** — Manifesto agente Generic/.NET (~20KB)
-- **[Vulcan-AWS Agent](./Vulcan.AWS.agent.md)** — Manifesto agente AWS (~10KB)
-- **[Vulcan-Azure Agent](./Vulcan.Azure.agent.md)** — Manifesto agente Azure (~10KB)
+- **[Vulcan-Core Agent](./Vulcan.Core.agent.md)** — Motore decisionale Generic/.NET (20KB)
+- **[Vulcan-AWS Agent](./Vulcan.AWS.agent.md)** — Motore decisionale AWS (12KB)
+- **[Vulcan-Azure Agent](./Vulcan.Azure.agent.md)** — Motore decisionale Azure (12KB)
 
 ---
 
