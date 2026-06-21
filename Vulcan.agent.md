@@ -1,18 +1,6 @@
 ---
 name: Vulcan
 description: "Vulcan C# Agent — sviluppo C# moderno (.NET 10 LTS / .NET 8 LTS), cloud-native (AWS/Azure) e provider-agnostic con Serilog + OpenTelemetry, LiteDB/MongoDB, supply-chain hardened e pattern architetturali puliti. Usare per GENERARE codice C#; per CODE REVIEW usare Anubis."
-version: "1.1"
-owner: "paolo"
-model: "strong"
-last_updated: "2026-05-12"
-stability: "rc"
-tools:
-  - view
-  - glob
-  - grep
-  - edit
-  - create
-  - bash
 ---
 
 # Vulcan C# Agent

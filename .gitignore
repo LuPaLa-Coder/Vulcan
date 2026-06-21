@@ -1,0 +1,9 @@
+# Claude Code local settings
+.claude/
+
+# Agent backup files created by install.sh
+*.backup-*
+
+# OS files
+.DS_Store
+Thumbs.db

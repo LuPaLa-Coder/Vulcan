@@ -21,33 +21,16 @@ Vulcan generates **production-ready C# code** across three cloud targets:
 5. Deploy to cloud (if applicable)
 ```
 
-## Basic Commands
+## Quick Start
 
-### Start Code Generation
+1. Seleziona **Vulcan** dal menu agent del tuo coding tool (Claude Code, OpenCode, Copilot, Cursor, Windsurf, Codex)
+2. Descrivi cosa vuoi costruire:
 
-**Interactive (Copilot CLI)**
 ```
-copilot
-/agent
-# Select: Vulcan
-
 "Crea un API REST per gestire ordini con validazione e persistenza"
 ```
 
-**Input File**
-```bash
-cat > code-request.json << 'EOF'
-{
-  "feature": "REST API for user management",
-  "appType": "API",
-  "storage": "Cosmos DB",
-  "target": "Azure",
-  "framework": "net8"
-}
-EOF
-
-copilot /agent Vulcan < code-request.json
-```
+Vulcan rileva automaticamente il target cloud e genera tutto il codice necessario.
 
 ## Cloud Target Detection
 
@@ -77,7 +60,7 @@ Vulcan automatically detects the cloud target:
 If target is ambiguous, Vulcan asks:
 
 ```
-🤔 Quale cloud stai usando?
+Quale cloud stai usando?
 1. AWS
 2. Azure
 3. Provider-agnostic (generic)
@@ -121,26 +104,16 @@ export VULCAN_DEFAULT_CLOUD=aws
 
 3. **Integrate into your project**
    ```bash
-   # Copy files
    cp generated/*.cs ./YourProject/Services/
    cp generated/bicep/ ./YourProject/
-   
-   # Update appsettings
    dotnet add package Azure.Identity
    dotnet add package Microsoft.Azure.Cosmos
    ```
 
 4. **Deploy to Azure**
    ```bash
-   # Build
    dotnet build
-   
-   # Deploy infrastructure
-   az deployment group create \
-     --resource-group myRg \
-     --template-file bicep/main.bicep
-   
-   # Deploy code
+   az deployment group create --resource-group myRg --template-file bicep/main.bicep
    func azure functionapp publish myFunctionApp
    ```
 
@@ -176,27 +149,9 @@ export VULCAN_DEFAULT_CLOUD=aws
    ✓ sam/ (SAM template)
    ```
 
-3. **Integrate and test locally**
+3. **Deploy with CDK**
    ```bash
-   # Install SAM CLI
-   pip install aws-sam-cli
-   
-   # Copy generated code
-   cp -r generated/* ./lambda-project/
-   
-   # Test locally
-   sam local start-api
-   
-   # Invoke locally
-   sam local invoke ProcessCsvFunction \
-     -e events/s3-event.json
-   ```
-
-4. **Deploy with CDK**
-   ```bash
-   # Deploy infrastructure + code
    cdk deploy --all
-   
    # Or with SAM
    sam deploy --guided
    ```
@@ -207,11 +162,9 @@ export VULCAN_DEFAULT_CLOUD=aws
 
 ### Workflow 3: Refactor Legacy Code
 
-**Goal**: Modernize legacy ASP.NET code to modern .NET 8 with clean architecture
+**Goal**: Modernize legacy code to clean architecture
 
-**Steps**:
-
-1. **Share existing code section**
+1. **Share existing code and request refactor**
    ```
    Refactor questa classe DataService in architettura pulita
    con Repository Pattern, Dependency Injection e logging:
@@ -219,30 +172,13 @@ export VULCAN_DEFAULT_CLOUD=aws
    [paste existing code]
    ```
 
-2. **Vulcan analyzes and generates**
-   ```
-   ✓ IDataRepository.cs (interface)
-   ✓ DataRepository.cs (implementation)
-   ✓ DataService.cs (refactored business logic)
-   ✓ Mapper.cs (DTOs if needed)
-   ✓ Logger setup
-   ✓ Error handling patterns
-   ✓ Tests with mocks
-   ```
+2. **Vulcan generates**: Interface, Repository, Service, DTOs, Validators, Tests
 
-3. **Review and integrate**
-   - Compare old vs. new
-   - Adjust mapping if needed
-   - Update DI container
-   - Run tests
-
-4. **Commit incrementally**
+3. **Integrate incrementally**
    ```bash
    git add -p  # Review changes
    git commit -m "Refactor DataService with Repository Pattern"
    ```
-
-**Result**: Modernized, testable code.
 
 ---
 
@@ -250,62 +186,20 @@ export VULCAN_DEFAULT_CLOUD=aws
 
 **Goal**: Build a complete microservice with API, worker, and shared library
 
-**Steps**:
-
-1. **Request microservice scaffold**
+1. **Request scaffold**
    ```
-   Crea una microservizio completa per OrderProcessing:
-   - API REST (create, read, update orders)
-   - Worker (process payment async)
-   - Shared library (domain models, DTOs)
-   - Azure Service Bus integration
-   - Cosmos DB persistence
+   Crea un microservizio per OrderProcessing:
+   - API REST, Worker, Shared library
+   - Azure Service Bus, Cosmos DB
    ```
 
-2. **Vulcan generates** (multiple projects):
-   ```
-   OrderService.API/
-   ├── Controllers/OrderController.cs
-   ├── Services/OrderService.cs
-   └── DependencyInjection.cs
-   
-   OrderService.Worker/
-   ├── PaymentProcessor.cs
-   ├── ServiceBusListener.cs
-   └── Startup.cs
-   
-   OrderService.Domain/
-   ├── Models/Order.cs
-   ├── DTOs/OrderDto.cs
-   └── Validators/
-   
-   OrderService.Tests/
-   ├── ServiceTests/
-   └── IntegrationTests/
-   ```
+2. **Vulcan generates** multiple projects: `OrderService.API`, `OrderService.Worker`, `OrderService.Domain`, `OrderService.Tests`
 
-3. **Build and test**
+3. **Build, test, deploy**
    ```bash
-   dotnet build
-   dotnet test
-   
-   # Run API
-   dotnet run --project OrderService.API
-   
-   # In another terminal, run worker
-   dotnet run --project OrderService.Worker
-   ```
-
-4. **Deploy both services**
-   ```bash
-   # Deploy API to Container Apps
+   dotnet build && dotnet test
    az containerapp up --name order-api ...
-   
-   # Deploy Worker to Container Apps
-   az containerapp up --name order-worker ...
    ```
-
-**Result**: Fully integrated microservice architecture.
 
 ---
 
@@ -316,12 +210,10 @@ By default, Vulcan generates:
 ```
 generated/
 ├── Controllers/              # HTTP entry points
-│   └── *.cs
 ├── Services/                 # Business logic
-│   └── *.cs
 ├── Data/
 │   ├── Repositories/         # Data access
-│   └── Entities/             # EF models
+│   └── Entities/             # Domain models
 ├── Models/
 │   ├── Dto/                  # API DTOs
 │   ├── Validators/           # FluentValidation
@@ -334,16 +226,13 @@ generated/
 │   ├── UnitTests/
 │   ├── IntegrationTests/
 │   └── Fixtures/
-├── [CloudProvider]/          # AWS CDK, Azure Bicep, etc.
-│   └── *.cs (or .bicep, .tf)
-└── Appsettings.json         # Configuration template
+├── [CloudProvider]/          # CDK, Bicep, Terraform
+└── Appsettings.json
 ```
 
 ## Advanced Usage
 
 ### Custom Project Structure
-
-Request specific project layout:
 
 ```
 Voglio una struttura multi-layer con:
@@ -353,11 +242,7 @@ Voglio una struttura multi-layer con:
 - Presentation (API)
 ```
 
-Vulcan adjusts the generated structure accordingly.
-
 ### Cloud Provider Switch
-
-Change target cloud for same feature:
 
 ```
 // First request (AWS)
@@ -367,64 +252,27 @@ Change target cloud for same feature:
 "Converti lo stesso API per Azure Functions"
 ```
 
-Vulcan translates patterns accordingly.
-
 ### Include/Exclude Components
 
-Control what gets generated:
-
 ```
-"API REST con autenticazione, validation e logging.
- Escludi tests e cloud infrastructure (farò io dopo)"
+"API REST con auth, validation e logging.
+ Escludi tests e cloud infrastructure"
 ```
-
-## Troubleshooting
-
-### "Generated code doesn't compile"
-- Check .NET version: `dotnet --version`
-- Run `dotnet restore` to fetch NuGet packages
-- Review error messages for missing dependencies
-- Check [examples.md](./examples.md) for similar code
-
-### "Ambiguous cloud target"
-- Set `VULCAN_DEFAULT_CLOUD` environment variable
-- Or Vulcan asks clarifying question (answer one of: AWS, Azure, generic)
-
-### "Generated API can't connect to database"
-- Verify connection string in appsettings.json
-- Ensure database/service exists in your subscription/account
-- Check authentication credentials (IAM, RBAC, connection string)
-- Review example in [examples.md](./examples.md)
-
-### "Tests don't run"
-- Ensure test project has correct target framework
-- Install testing NuGet packages (xUnit, Moq, etc.)
-- Use `dotnet test --verbosity detailed` for diagnostics
-- Review test example in [examples.md](./examples.md)
 
 ## Best Practices
 
 ✅ **Do**:
 - Review generated code before using in production
 - Understand the patterns (Repository, DI, async/await)
-- Add unit tests for business logic
 - Use Vulcan for scaffolding, not black-box generation
 - Integrate incrementally into your project
 
 ❌ **Don't**:
 - Copy-paste generated code without understanding
-- Skip testing ("I'll test later")
+- Skip testing
 - Assume generated code is optimized for your exact needs
 - Use production credentials in generated config files
 - Deploy without security review
-
-## Support
-
-For issues or questions:
-1. Check **[Examples](./examples.md)** for similar scenarios
-2. Review **[Installation Guide](./installation.md)** for setup help
-3. Enable verbose logging in generated code
-4. Review main [README](./README.md)
 
 ---
 
