@@ -2,22 +2,24 @@
 
 ## One-Liner Global Install (Recommended)
 
-Installa Vulcan automaticamente su tutti i coding agent rilevati:
+Installa tutti e tre gli agenti Vulcan (Core, AWS, Azure) automaticamente su ogni coding agent rilevato:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/LuPala_Coder/Vulcan/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/LuPaLa-Coder/Vulcan/main/install.sh | bash
 ```
 
 Lo script:
 1. Rileva automaticamente quali coding agent hai installato
-2. Copia `Vulcan.agent.md` nella directory agent corretta per ciascuno
-3. Crea un backup se Vulcan era già installato
+2. Copia `Vulcan.Core.agent.md`, `Vulcan.AWS.agent.md`, `Vulcan.Azure.agent.md` nella directory agent corretta
+3. Copia i template AWS e Azure nella subdirectory `vulcan-templates/`
+4. Rimuove automaticamente l'agente legacy `Vulcan.agent.md` (v1/v2) se presente
+5. Crea un backup se usi l'opzione `--backup`
 
 ## Installazione Selettiva
 
 ```bash
 # Prima clona il repo
-git clone https://github.com/LuPala_Coder/Vulcan.git
+git clone https://github.com/LuPaLa-Coder/Vulcan.git
 cd Vulcan
 
 # Solo per Claude Code
@@ -50,7 +52,7 @@ cd Vulcan
 
 ## Installazione Manuale
 
-Copia `Vulcan.agent.md` nella directory agent del tuo coding tool:
+Copia i tre file agent nella directory del tuo coding tool:
 
 | Tool | Directory Agent |
 |------|----------------|
@@ -63,20 +65,37 @@ Copia `Vulcan.agent.md` nella directory agent del tuo coding tool:
 | **Project-local** | `.claude/agents/` nella root del progetto |
 
 ```bash
-# Linux/macOS
-cp Vulcan.agent.md ~/.claude/agents/
+# Linux/macOS — Claude Code
+cp Vulcan.Core.agent.md ~/.claude/agents/
+cp Vulcan.AWS.agent.md ~/.claude/agents/
+cp Vulcan.Azure.agent.md ~/.claude/agents/
 
-# Windows
-copy Vulcan.agent.md %USERPROFILE%\.claude\agents\
+# Linux/macOS — GitHub Copilot
+cp Vulcan.Core.agent.md ~/.copilot/agents/
+cp Vulcan.AWS.agent.md ~/.copilot/agents/
+cp Vulcan.Azure.agent.md ~/.copilot/agents/
+
+# Windows — Claude Code
+copy Vulcan.Core.agent.md %USERPROFILE%\.claude\agents\
+copy Vulcan.AWS.agent.md %USERPROFILE%\.claude\agents\
+copy Vulcan.Azure.agent.md %USERPROFILE%\.claude\agents\
 ```
 
-Dopo l'installazione, Vulcan appare nel dropdown/menu degli agenti del tuo coding tool.
+Dopo l'installazione, **Vulcan-Core**, **Vulcan-AWS** e **Vulcan-Azure** appaiono nel dropdown/menu degli agenti del tuo coding tool.
+
+### Copia Template (opzionale ma consigliato)
+
+```bash
+mkdir -p ~/.claude/agents/vulcan-templates
+cp docs/vulcan-aws-templates.md ~/.claude/agents/vulcan-templates/
+cp docs/vulcan-azure-templates.md ~/.claude/agents/vulcan-templates/
+```
 
 ## Prerequisites
 
 ### Required
 - **Un coding agent compatibile**: Claude Code, OpenCode, GitHub Copilot, Cursor, Windsurf, o Codex
-- **.NET SDK 10.0+** (o 8.0+ per progetti esistenti)
+- **.NET SDK 8.0+** (o 9.0+ per feature specifiche)
   ```bash
   dotnet --version
   ```
@@ -84,64 +103,78 @@ Dopo l'installazione, Vulcan appare nel dropdown/menu degli agenti del tuo codin
 
 ### Recommended
 - **Docker** (per testing containerizzato)
-- **AWS CLI** (se usi target AWS)
-- **Azure CLI** (se usi target Azure)
+- **AWS CLI** (se usi Vulcan-AWS)
+- **Azure CLI** (se usi Vulcan-Azure)
 
 ## Cloud Setup (Optional)
 
-### AWS Setup (per target Lambda/ECS)
+### AWS Setup (per Vulcan-AWS)
 
 ```bash
 aws configure
 npm install -g aws-cdk
 ```
 
-### Azure Setup (per target Functions/Container Apps)
+### Azure Setup (per Vulcan-Azure)
 
 ```bash
 az login
 az bicep install
 ```
 
-## Verification
+## Verifica
 
-Verifica che Vulcan sia installato:
+Verifica che gli agenti Vulcan siano installati:
 
 ```bash
-# Controlla che il file agent sia presente
-ls -la ~/.claude/agents/Vulcan.agent.md      # Claude Code
-ls -la ~/.opencode/agents/Vulcan.agent.md    # OpenCode
-ls -la ~/.copilot/agents/Vulcan.agent.md     # GitHub Copilot
-ls -la ~/.cursor/agents/Vulcan.agent.md      # Cursor
+# Claude Code
+ls -la ~/.claude/agents/Vulcan.Core.agent.md
+ls -la ~/.claude/agents/Vulcan.AWS.agent.md
+ls -la ~/.claude/agents/Vulcan.Azure.agent.md
+
+# GitHub Copilot
+ls -la ~/.copilot/agents/Vulcan.Core.agent.md
+ls -la ~/.copilot/agents/Vulcan.AWS.agent.md
+ls -la ~/.copilot/agents/Vulcan.Azure.agent.md
 ```
 
-Poi apri il tuo coding tool e seleziona **Vulcan** dal menu agent.
+Poi apri il tuo coding tool e seleziona l'agente Vulcan appropriato dal menu.
 
 ## Quick Test
 
-1. Apri il tuo coding tool e seleziona **Vulcan** dal menu agent
+1. Apri il tuo coding tool e seleziona **Vulcan-Core** dal menu agent
 2. Richiedi un semplice endpoint:
    ```
-   Crea un API endpoint C# per ottenere dati utente da Cosmos DB
+   Crea un API endpoint C# per ottenere dati utente
    ```
-3. Vulcan genera il codice completo con Controller, Service, Repository, DI, test, e IaC
+3. Vulcan-Core genera il codice completo
+
+4. Prova anche **Vulcan-AWS**:
+   ```
+   Crea una Lambda function con DynamoDB
+   ```
+5. E **Vulcan-Azure**:
+   ```
+   Crea una Azure Function con Cosmos DB
+   ```
 
 ## Troubleshooting
 
-### Agent non appare nel menu
+### Agenti non appaiono nel menu
 
-- Verifica che il file sia nella directory corretta
+- Verifica che i file siano nella directory corretta
 - Riavvia il coding tool
-- Controlla che il nome file sia esattamente `Vulcan.agent.md`
+- Controlla che i nomi file siano esattamente `Vulcan.Core.agent.md`, `Vulcan.AWS.agent.md`, `Vulcan.Azure.agent.md`
 
-### "Target cloud ambiguous"
+### "Quale agente Vulcan devo usare?"
 
-- Vulcan chiederà una sola domanda: _"AWS, Azure o provider-agnostic?"_
-- Rispondi con uno dei tre target
+- **Vulcan-Core**: API generiche, console app, librerie, gRPC — nessun cloud specifico
+- **Vulcan-AWS**: Lambda, DynamoDB, S3, SQS, SNS, ECS, CDK
+- **Vulcan-Azure**: Functions, Cosmos DB, Service Bus, Container Apps, Bicep
 
 ### Il codice generato non compila
 
-- Assicurati di avere .NET 10.0+ installato: `dotnet --version`
+- Assicurati di avere .NET 8.0+ installato: `dotnet --version`
 - Esegui `dotnet restore` nella directory del progetto generato
 - Controlla il target framework nei file `.csproj`
 
@@ -150,6 +183,10 @@ Poi apri il tuo coding tool e seleziona **Vulcan** dal menu agent.
 - Verifica le credenziali (`aws configure`, `az login`)
 - Controlla i permessi del servizio (IAM per AWS, RBAC per Azure)
 - Assicurati che il servizio esista nel tuo account/subscription
+
+### Migrazione da Vulcan v2 (legacy)
+
+Se avevi installato `Vulcan.agent.md` (v1/v2), l'installer v3.0 lo rimuove automaticamente. I tre nuovi agenti sostituiscono completamente il vecchio agente unificato. Se vuoi mantenere il vecchio agente, rinominalo prima di eseguire l'installer.
 
 ---
 
@@ -161,4 +198,4 @@ Poi apri il tuo coding tool e seleziona **Vulcan** dal menu agent.
 
 ---
 
-**Repository**: https://github.com/LuPala_Coder/Vulcan.git
+**Repository**: https://github.com/LuPaLa-Coder/Vulcan.git

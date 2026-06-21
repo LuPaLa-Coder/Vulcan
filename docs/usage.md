@@ -2,220 +2,197 @@
 
 ## Overview
 
-Vulcan generates **production-ready C# code** across three cloud targets:
-- **Generic**: Provider-agnostic, local development, library code
-- **AWS**: Lambda, ECS, API Gateway, DynamoDB
-- **Azure**: Functions, Container Apps, Cosmos DB, Service Bus
+La famiglia Vulcan è composta da tre agenti specializzati per lo sviluppo C#:
+
+| Agente | Target | Quando usarlo |
+|---|---|---|
+| **Vulcan-Core** | Provider-agnostic | Console app, API REST, Minimal API, gRPC, librerie, worker service |
+| **Vulcan-AWS** | AWS | Lambda, DynamoDB, SQS, SNS, S3, ECS, API Gateway, CDK |
+| **Vulcan-Azure** | Azure | Functions, Cosmos DB, Service Bus, Container Apps, Key Vault, Bicep |
+
+Ogni agente è completo e auto-sufficiente per il suo target. Scegli l'agente giusto prima di iniziare.
 
 ## Workflow
 
 ```
-1. Describe feature/component
-     ↓
-2. Vulcan detects cloud target (or asks)
-     ↓
-3. Vulcan generates complete C# solution
-     ↓
-4. Review, adapt, integrate into your project
-     ↓
-5. Deploy to cloud (if applicable)
+1. Scegli l'agente Vulcan appropriato
+         ↓
+2. Descrivi feature/componente
+         ↓
+3. Vulcan genera codice C# production-ready
+         ↓
+4. Review, adatta, integra nel tuo progetto
+         ↓
+5. Deploy (se applicabile)
 ```
 
 ## Quick Start
 
-1. Seleziona **Vulcan** dal menu agent del tuo coding tool (Claude Code, OpenCode, Copilot, Cursor, Windsurf, Codex)
+1. Seleziona l'agente dal menu del tuo coding tool:
+   - **Vulcan-Core** per codice provider-agnostic
+   - **Vulcan-AWS** per sviluppo su AWS
+   - **Vulcan-Azure** per sviluppo su Azure
+
 2. Descrivi cosa vuoi costruire:
 
 ```
 "Crea un API REST per gestire ordini con validazione e persistenza"
 ```
 
-Vulcan rileva automaticamente il target cloud e genera tutto il codice necessario.
+3. L'agente genera tutto il codice necessario.
 
-## Cloud Target Detection
+## Scegliere l'Agente Giusto
 
-Vulcan automatically detects the cloud target:
+### Quando usare Vulcan-Core
 
-### AWS Indicators
-- Lambda, SQS, SNS, DynamoDB, S3, Kinesis
-- ECS, Fargate, API Gateway
-- CloudWatch, X-Ray
-- CDK, SAM (Serverless Application Model)
+- Console application (Spectre.Console)
+- API REST generica o Minimal API
+- gRPC service
+- Libreria NuGet
+- Worker service con BackgroundService
+- Progetto .NET Aspire multi-servizio
+- Refactoring di codice legacy
+- Qualsiasi progetto senza servizi cloud specifici
 
-### Azure Indicators
-- Azure Functions, Azure Container Apps
-- Cosmos DB, Table Storage, Queue Storage
-- Service Bus, Event Grid
-- Application Insights, Key Vault
-- Bicep, Azure Resource Manager
+### Quando usare Vulcan-AWS
 
-### Generic (No Cloud Specific)
-- Local console applications
-- Standard .NET libraries
-- Generic APIs (HTTP/gRPC)
-- Any provider-agnostic pattern
+- Lambda function (API Gateway trigger, S3 trigger, SQS trigger)
+- DynamoDB data access
+- SQS/SNS messaging
+- Step Functions workflow
+- ECS Fargate container
+- CDK infrastructure (C#)
+- CloudWatch observability
 
-### Manual Target Selection
+### Quando usare Vulcan-Azure
 
-If target is ambiguous, Vulcan asks:
+- Azure Functions (HTTP trigger, Service Bus trigger, Timer trigger)
+- Cosmos DB data access
+- Service Bus messaging
+- Durable Functions workflow
+- Container Apps
+- Bicep infrastructure
+- Application Insights observability
 
-```
-Quale cloud stai usando?
-1. AWS
-2. Azure
-3. Provider-agnostic (generic)
-```
+### Progetti Multi-Cloud o Ibridi
 
-Or set environment variable:
-```bash
-export VULCAN_DEFAULT_CLOUD=aws
-```
+Se il progetto usa servizi di entrambi i cloud:
+1. Inizia con **Vulcan-Core** per la struttura base
+2. Per le parti AWS-specifiche, consulta **Vulcan-AWS**
+3. Per le parti Azure-specifiche, consulta **Vulcan-Azure**
+
+In futuro, Vulcan supporterà una modalità `[Multi-Cloud]` nativa.
 
 ## Common Workflows
 
-### Workflow 1: Create REST API (Azure)
+### Workflow 1: API REST con Vulcan-Core
 
-**Goal**: Build a complete user management API on Azure Functions
+**Goal**: Build a complete API REST
 
-**Steps**:
+1. **Seleziona Vulcan-Core**
 
-1. **Request code generation**
+2. **Request**:
    ```
    Crea un'API REST per la gestione utenti con:
-   - Azure Functions
-   - Cosmos DB per persistenza
-   - Autenticazione bearer token
-   - Logging strutturato
-   - Validazione input
+   - Minimal API o Controller (in base alla complessità)
+   - PostgreSQL + EF Core
+   - FluentValidation
+   - Serilog + OpenTelemetry
+   - MSTest con smoke test
    ```
 
-2. **Vulcan generates** (detects Azure automatically):
+3. **Vulcan-Core genera**:
    ```
-   ✓ UserController.cs (Azure Functions HttpTrigger)
-   ✓ UserService.cs (business logic)
-   ✓ UserRepository.cs (Cosmos DB access)
-   ✓ Startup.cs (DI setup)
-   ✓ UserValidator.cs (input validation)
-   ✓ ErrorHandling.cs (middleware)
-   ✓ Logging.cs (Serilog setup)
-   ✓ Tests/ (unit test stubs)
-   ✓ bicep/ (Infrastructure as Code)
+   ✓ Program.cs (Minimal API con MapGroup)
+   ✓ UserService.cs
+   ✓ EF Core DbContext
+   ✓ CreateUserDto, UserDto (record)
+   ✓ UserValidator.cs
+   ✓ Tests/ (smoke test incluso)
+   ✓ Dockerfile multi-stage
    ```
 
-3. **Integrate into your project**
-   ```bash
-   cp generated/*.cs ./YourProject/Services/
-   cp generated/bicep/ ./YourProject/
-   dotnet add package Azure.Identity
-   dotnet add package Microsoft.Azure.Cosmos
-   ```
+### Workflow 2: Lambda Function con Vulcan-AWS
 
-4. **Deploy to Azure**
-   ```bash
-   dotnet build
-   az deployment group create --resource-group myRg --template-file bicep/main.bicep
-   func azure functionapp publish myFunctionApp
-   ```
+**Goal**: Serverless data processing su AWS
 
-**Result**: Production-ready Azure Functions API deployed.
+1. **Seleziona Vulcan-AWS**
 
----
-
-### Workflow 2: Create Lambda Function (AWS)
-
-**Goal**: Build a serverless data processing function on AWS Lambda
-
-**Steps**:
-
-1. **Request code generation**
+2. **Request**:
    ```
    Crea una Lambda function per processare file CSV:
    - Leggi da S3
    - Valida dati
    - Salva su DynamoDB
-   - Logging con CloudWatch
-   - Error handling
+   - Lambda Powertools per logging/tracing/metrics
+   - CDK Stack
    ```
 
-2. **Vulcan generates** (detects AWS):
+3. **Vulcan-AWS genera**:
    ```
-   ✓ ProcessCsvFunction.cs (Lambda handler)
-   ✓ CsvProcessor.cs (processing logic)
-   ✓ DynamoDbRepository.cs (data access)
-   ✓ Configuration.cs (DI + AWS setup)
-   ✓ Validators/ (input validation)
-   ✓ Tests/ (unit tests)
-   ✓ cdk/ (CDK infrastructure code)
-   ✓ sam/ (SAM template)
-   ```
-
-3. **Deploy with CDK**
-   ```bash
-   cdk deploy --all
-   # Or with SAM
-   sam deploy --guided
+   ✓ ProcessCsvFunction.cs (Lambda handler con Powertools)
+   ✓ CsvProcessor.cs
+   ✓ DynamoDbRepository.cs
+   ✓ Startup.cs (DI + AWS SDK)
+   ✓ Tests/
+   ✓ cdk/MyServiceStack.cs
+   ✓ docker-compose.yml (LocalStack)
    ```
 
-**Result**: Production-ready Lambda function deployed on AWS.
+### Workflow 3: Azure Functions con Vulcan-Azure
 
----
+**Goal**: API serverless su Azure
 
-### Workflow 3: Refactor Legacy Code
+1. **Seleziona Vulcan-Azure**
 
-**Goal**: Modernize legacy code to clean architecture
+2. **Request**:
+   ```
+   Crea Azure Functions per gestione prodotti:
+   - HTTP trigger (GET, POST, PUT, DELETE)
+   - Cosmos DB per persistenza
+   - Managed Identity per auth
+   - Key Vault per segreti
+   - Bicep per IaC
+   ```
 
-1. **Share existing code and request refactor**
+3. **Vulcan-Azure genera**:
+   ```
+   ✓ HttpTriggerFunction.cs (Isolated Worker)
+   ✓ ProductService.cs
+   ✓ CosmosProductRepository.cs (soft delete, query parametrizzate)
+   ✓ Program.cs (Managed Identity + Key Vault)
+   ✓ Tests/
+   ✓ infra/main.bicep
+   ✓ docker-compose.yml (Azurite + Cosmos Emulator)
+   ```
+
+### Workflow 4: Refactor Legacy Code con Vulcan-Core
+
+**Goal**: Modernizzare codice legacy
+
+1. **Seleziona Vulcan-Core**
+
+2. **Condividi il codice e richiedi il refactor**:
    ```
    Refactor questa classe DataService in architettura pulita
-   con Repository Pattern, Dependency Injection e logging:
-   
+   con OneOf per error handling, Dependency Injection e logging:
+
    [paste existing code]
    ```
 
-2. **Vulcan generates**: Interface, Repository, Service, DTOs, Validators, Tests
-
-3. **Integrate incrementally**
-   ```bash
-   git add -p  # Review changes
-   git commit -m "Refactor DataService with Repository Pattern"
-   ```
-
----
-
-### Workflow 4: Create Microservice
-
-**Goal**: Build a complete microservice with API, worker, and shared library
-
-1. **Request scaffold**
-   ```
-   Crea un microservizio per OrderProcessing:
-   - API REST, Worker, Shared library
-   - Azure Service Bus, Cosmos DB
-   ```
-
-2. **Vulcan generates** multiple projects: `OrderService.API`, `OrderService.Worker`, `OrderService.Domain`, `OrderService.Tests`
-
-3. **Build, test, deploy**
-   ```bash
-   dotnet build && dotnet test
-   az containerapp up --name order-api ...
-   ```
-
----
+3. **Vulcan-Core genera**: Interface, Service (con OneOf), Repository, DTOs (record), Validators, Tests
 
 ## Output Structure
 
-By default, Vulcan generates:
-
 ```
 generated/
-├── Controllers/              # HTTP entry points
+├── Controllers/              # HTTP entry points (o Minimal API in Program.cs)
 ├── Services/                 # Business logic
 ├── Data/
 │   ├── Repositories/         # Data access
 │   └── Entities/             # Domain models
 ├── Models/
-│   ├── Dto/                  # API DTOs
+│   ├── Dto/                  # API DTOs (record types)
 │   ├── Validators/           # FluentValidation
 │   └── Exceptions/           # Custom exceptions
 ├── Infrastructure/
@@ -224,10 +201,9 @@ generated/
 │   └── Configuration.cs
 ├── Tests/
 │   ├── UnitTests/
-│   ├── IntegrationTests/
-│   └── Fixtures/
-├── [CloudProvider]/          # CDK, Bicep, Terraform
-└── Appsettings.json
+│   └── IntegrationTests/
+├── [CloudProvider]/          # CDK (AWS) o Bicep (Azure)
+└── appsettings.json
 ```
 
 ## Advanced Usage
@@ -242,13 +218,15 @@ Voglio una struttura multi-layer con:
 - Presentation (API)
 ```
 
-### Cloud Provider Switch
+### Cambiare Target Cloud
+
+Se cambi idea sul provider cloud, usa l'agente appropriato per la nuova richiesta:
 
 ```
-// First request (AWS)
+// Prima richiesta con Vulcan-AWS
 "Crea un API per ordini su AWS Lambda"
 
-// Later (switch to Azure)
+// Poi con Vulcan-Azure
 "Converti lo stesso API per Azure Functions"
 ```
 
@@ -262,18 +240,20 @@ Voglio una struttura multi-layer con:
 ## Best Practices
 
 ✅ **Do**:
-- Review generated code before using in production
-- Understand the patterns (Repository, DI, async/await)
-- Use Vulcan for scaffolding, not black-box generation
-- Integrate incrementally into your project
+- Scegli l'agente Vulcan giusto per il tuo target
+- Reviewa il codice generato prima di usarlo in produzione
+- Comprendi i pattern (OneOf, Minimal API, IAsyncEnumerable)
+- Integra incrementalmente nel tuo progetto
+- Usa l'handoff ad Anubis per la code review
 
 ❌ **Don't**:
-- Copy-paste generated code without understanding
-- Skip testing
-- Assume generated code is optimized for your exact needs
-- Use production credentials in generated config files
-- Deploy without security review
+- Usare Vulcan-AWS per progetti Azure (e viceversa)
+- Copiare/incollare codice senza capirlo
+- Saltare i test (ogni agente genera almeno uno smoke test)
+- Assumere che il codice generato sia ottimizzato per ogni caso
+- Usare credenziali di produzione nei file di configurazione generati
+- Deployare senza security review
 
 ---
 
-**Ready to code?** See **[Examples](./examples.md)** for real-world scenarios.
+**Pronto per iniziare?** Vedi gli **[Examples](./examples.md)** per scenari real-world.
