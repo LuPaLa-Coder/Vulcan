@@ -1,6 +1,6 @@
 ---
 name: Vulcan-Core
-description: "Vulcan-Core C# Agent — sviluppo C# moderno (.NET 8 LTS / .NET 9), provider-agnostic con Serilog + OpenTelemetry, LiteDB/MongoDB/PostgreSQL, supply-chain hardened e pattern architetturali puliti. Usare per GENERARE codice C# in contesto Generic; per AWS usare Vulcan-AWS, per Azure usare Vulcan-Azure. Per CODE REVIEW usare Anubis."
+description: "Vulcan-Core C# Agent — sviluppo C# moderno (.NET 10 LTS), provider-agnostic con Serilog + OpenTelemetry, LiteDB/MongoDB/PostgreSQL, supply-chain hardened e pattern architetturali puliti. Usare per GENERARE codice C# in contesto Generic; per AWS usare Vulcan-AWS, per Azure usare Vulcan-Azure. Per CODE REVIEW usare Anubis."
 ---
 
 # Vulcan-Core — Agente C# Generic
@@ -25,9 +25,9 @@ Sei un **senior engineer** specializzato in C# e .NET. Non generi boilerplate: s
 
 | Versione | Ruolo | Note |
 |---|---|---|
-| **.NET 8 LTS** | **Primario** | Stabile, supportato fino a novembre 2026. Default per tutti i nuovi progetti. |
-| **.NET 9** | Secondario | Corrente (STS). Per progetti che richiedono feature specifiche di .NET 9. |
-| **.NET 10 LTS** | Futuro | GA previsto novembre 2026. Da adottare dopo il rilascio ufficiale. |
+| **.NET 10 LTS** | **Primario** | GA da novembre 2025, supportato fino a novembre 2028. Default per tutti i nuovi progetti. |
+| **.NET 8 LTS** | Legacy | EOL novembre 2026. Solo per progetti esistenti in fase di migrazione. |
+| **.NET 9** | Deprecato | EOL novembre 2026 (STS esteso). Da non usare per nuovi progetti. |
 
 Usa sempre `LangVersion=latest` per accedere alle feature C# più recenti compatibili con il runtime target.
 
@@ -72,7 +72,7 @@ Scegli la soluzione più semplice compatibile con il problema. Non applicare pat
 
 ## Stack di Base
 
-- **.NET 8 LTS** primario · **.NET 9** per feature specifiche · **.NET 10 LTS** quando GA.
+- **.NET 10 LTS** primario · **.NET 8 LTS** legacy · **.NET 9** deprecato.
 - **Serilog** structured logging + sink OTLP / Console / File.
 - **OpenTelemetry** per logs+metrics+traces (esportatore OTLP).
 - **Dependency Injection** + **Options Pattern**.
@@ -84,7 +84,7 @@ Ogni `.csproj` (o `Directory.Build.props` condiviso) include:
 
 ```xml
 <PropertyGroup>
-  <TargetFramework>net8.0</TargetFramework>
+  <TargetFramework>net10.0</TargetFramework>
   <LangVersion>latest</LangVersion>
   <Nullable>enable</Nullable>
   <ImplicitUsings>enable</ImplicitUsings>
@@ -389,7 +389,7 @@ Riconosci e segnala questi pattern. La severità indica l'urgenza dell'intervent
 
 ### Docker
 
-Genera Dockerfile multi-stage (`mcr.microsoft.com/dotnet/sdk:8.0` build, `aspnet:8.0-alpine` / `runtime:8.0-alpine` runtime, utente non-root) e `docker-compose.yml` solo per:
+Genera Dockerfile multi-stage (`mcr.microsoft.com/dotnet/sdk:10.0` build, `aspnet:10.0-alpine` / `runtime:10.0-alpine` runtime, utente non-root) e `docker-compose.yml` solo per:
 - API e worker service
 - Servizi deployabili
 
@@ -484,7 +484,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
-        with: { dotnet-version: '8.0.x' }
+        with: { dotnet-version: '10.0.x' }
       - run: dotnet format --verify-no-changes
       - run: dotnet restore --locked-mode
       - run: dotnet build --no-restore -c Release -warnaserror

@@ -26,7 +26,7 @@ RED='\033[0;31m'   GREEN='\033[0;32m'   YELLOW='\033[1;33m'
 CYAN='\033[0;36m'  BOLD='\033[1m'      NC='\033[0m'
 
 # ── Configurazione ───────────────────────────────────────────────────────────
-VULCAN_VERSION="3.0.0"
+VULCAN_VERSION="3.1.0"
 REPO_URL="https://raw.githubusercontent.com/LuPaLa-Coder/Vulcan/main"
 
 # Tre agenti Vulcan — Core (Generic), AWS, Azure
@@ -43,13 +43,13 @@ LEGACY_AGENT_FILE="Vulcan.agent.md"
 get_agent_description() {
     case "$1" in
         "Vulcan.Core.agent.md")
-            echo 'Vulcan-Core C# Agent — sviluppo C# moderno (.NET 8 LTS / .NET 9), provider-agnostic con Serilog + OpenTelemetry, LiteDB/MongoDB/PostgreSQL, supply-chain hardened e pattern architetturali puliti. Usare per GENERARE codice C# in contesto Generic; per AWS usare Vulcan-AWS, per Azure usare Vulcan-Azure. Per CODE REVIEW usare Anubis.'
+            echo 'Vulcan-Core C# Agent — sviluppo C# moderno (.NET 10 LTS), provider-agnostic con Serilog + OpenTelemetry, LiteDB/MongoDB/PostgreSQL, supply-chain hardened e pattern architetturali puliti. Usare per GENERARE codice C# in contesto Generic; per AWS usare Vulcan-AWS, per Azure usare Vulcan-Azure. Per CODE REVIEW usare Anubis.'
             ;;
         "Vulcan.AWS.agent.md")
-            echo 'Vulcan-AWS C# Agent — sviluppo cloud-native su AWS con .NET 8 LTS: Lambda, DynamoDB, SQS, SNS, S3, ECS, API Gateway, CDK. Usare per GENERARE codice C# con target AWS. Per codice provider-agnostic usare Vulcan-Core, per Azure usare Vulcan-Azure.'
+            echo 'Vulcan-AWS C# Agent — sviluppo cloud-native su AWS con .NET 10 LTS: Lambda, DynamoDB, SQS, SNS, S3, ECS, API Gateway, CDK. Usare per GENERARE codice C# con target AWS. Per codice provider-agnostic usare Vulcan-Core, per Azure usare Vulcan-Azure.'
             ;;
         "Vulcan.Azure.agent.md")
-            echo 'Vulcan-Azure C# Agent — sviluppo cloud-native su Azure con .NET 8 LTS: Functions, Cosmos DB, Service Bus, Container Apps, Key Vault, Bicep. Usare per GENERARE codice C# con target Azure. Per codice provider-agnostic usare Vulcan-Core, per AWS usare Vulcan-AWS.'
+            echo 'Vulcan-Azure C# Agent — sviluppo cloud-native su Azure con .NET 10 LTS: Functions, Cosmos DB, Service Bus, Container Apps, Key Vault, Bicep. Usare per GENERARE codice C# con target Azure. Per codice provider-agnostic usare Vulcan-Core, per AWS usare Vulcan-AWS.'
             ;;
     esac
 }
@@ -82,7 +82,7 @@ print_banner() {
     echo -e "${CYAN}${BOLD}"
     echo "  ⚡ Vulcan C# Agent — Global Installer v${VULCAN_VERSION}"
     echo -e "${NC}"
-    echo "  C# .NET 8/9 · Vulcan-Core · Vulcan-AWS · Vulcan-Azure"
+    echo "  C# .NET 10 LTS · Vulcan-Core · Vulcan-AWS · Vulcan-Azure"
     echo "  Cloud-Native Development Agents"
     echo ""
 }
@@ -139,7 +139,11 @@ get_agent_body() {
 
     # Estrai il corpo: salta tutto fino al secondo --- (fine frontmatter YAML)
     local body
-    body=$(awk 'BEGIN { c=0 } /^---$/ { c++; next } c >= 2' "$src")
+    body=$(awk '
+      BEGIN { c = 0 }
+      /^---$/ && c < 2 { c++; next }
+      c >= 2 { print }
+    ' "$src")
 
     # Salva in cache
     eval "$varname=\"\$body\""
@@ -272,19 +276,19 @@ get_agent_dirs() {
             fi
 
             if [[ -z "$agent" || "$agent" == "copilot" ]]; then
-                if [[ -d "$HOME/.copilot" ]] || [[ -d "$HOME/.vscode" ]] || command -v code &>/dev/null; then
+                if [[ -d "$HOME/.copilot" ]]; then
                     printf '%s|%s\n' "$HOME/.copilot/agents" "GitHub Copilot"
                 fi
             fi
 
             if [[ -z "$agent" || "$agent" == "cursor" ]]; then
-                if [[ -d "$HOME/.cursor" ]] || [[ -d "/Applications/Cursor.app" ]] || command -v cursor &>/dev/null; then
+                if [[ -d "$HOME/.cursor" ]] && [[ -d "$HOME/.cursor/agents" ]]; then
                     printf '%s|%s\n' "$HOME/.cursor/agents" "Cursor"
                 fi
             fi
 
             if [[ -z "$agent" || "$agent" == "windsurf" ]]; then
-                if [[ -d "$HOME/.windsurf" ]] || [[ -d "/Applications/Windsurf.app" ]]; then
+                if [[ -d "$HOME/.windsurf" ]] && [[ -d "$HOME/.windsurf/agents" ]]; then
                     printf '%s|%s\n' "$HOME/.windsurf/agents" "Windsurf"
                 fi
             fi
@@ -310,6 +314,9 @@ get_agent_dirs() {
             fi
             if [[ -z "$agent" || "$agent" == "cursor" ]]; then
                 printf '%s|%s\n' "$appdata/Cursor/agents" "Cursor"
+            fi
+            if [[ -z "$agent" || "$agent" == "windsurf" ]]; then
+                printf '%s|%s\n' "$appdata/Windsurf/agents" "Windsurf"
             fi
             if [[ -z "$agent" || "$agent" == "codex" ]]; then
                 printf '%s|%s\n' "$HOME/.codex/agents" "OpenAI Codex"
