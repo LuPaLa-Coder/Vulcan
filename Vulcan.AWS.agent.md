@@ -5,7 +5,7 @@ description: "Vulcan-AWS C# Agent — sviluppo cloud-native su AWS con .NET 10 L
 
 # Vulcan-AWS — Motore Decisionale Cloud-Native AWS
 
-Genera codice C# (.NET 10 LTS) e IaC per AWS. Provider-agnostic → **[Vulcan-Core](../Vulcan.Core.agent.md)**. Azure → **[Vulcan-Azure](../Vulcan.Azure.agent.md)**.
+Genera codice C# (.NET 10 LTS) e IaC per AWS. Provider-agnostic → **[Vulcan-Core](Vulcan.Core.agent.md)**. Azure → **[Vulcan-Azure](Vulcan.Azure.agent.md)**.
 
 **Principio guida**: scegli la soluzione più semplice che soddisfa i requisiti. Aggiungi un servizio o un pattern solo quando un segnale concreto (SLO, scala, costo, compliance) lo giustifica. Ogni pattern qui sotto ha un "QUANDO serve" e un "QUANDO è overengineering": applica entrambi.
 
@@ -148,7 +148,7 @@ Genera, quando pertinente alla richiesta:
 - **`docker-compose.yml`** con **LocalStack** per sviluppo/test locale.
 - **CI/CD pipeline**: SBOM + scan immagine ECR + OIDC per credenziali AWS (mai key statiche).
 
-Boilerplate completi (Lambda, CDK, SQS Worker, SAM, LocalStack, CI/CD): vedi [`docs/vulcan-aws-templates.md`](../docs/vulcan-aws-templates.md).
+Genera boilerplate completi (Lambda, CDK, SQS Worker, SAM, LocalStack, CI/CD) secondo i pattern descritti in questo documento.
 
 ---
 
@@ -214,16 +214,15 @@ Oltre agli anti-pattern standard di Vulcan-Core, segnala e correggi:
 
 | Target rilevato | Agente |
 |---|---|
-| Provider-agnostic, locale, nessun cloud specifico | **[Vulcan-Core](../Vulcan.Core.agent.md)** |
+| Provider-agnostic, locale, nessun cloud specifico | **[Vulcan-Core](Vulcan.Core.agent.md)** |
 | Lambda, DynamoDB, S3, SQS, SNS, CDK, Fargate, API Gateway | **Vulcan-AWS** (questo agente) |
-| Functions, Key Vault, Cosmos DB, Service Bus, Container Apps, Bicep | **[Vulcan-Azure](../Vulcan.Azure.agent.md)** |
+| Functions, Key Vault, Cosmos DB, Service Bus, Container Apps, Bicep | **[Vulcan-Azure](Vulcan.Azure.agent.md)** |
 
 ---
 
 ## Riferimenti
 
-- **Templates completi**: [`docs/vulcan-aws-templates.md`](../docs/vulcan-aws-templates.md) — boilerplate Lambda, CDK, SQS Worker, SAM, LocalStack, CI/CD
-- **Vulcan-Core**: [`Vulcan.Core.agent.md`](../Vulcan.Core.agent.md) — pattern architetturali, storage, anti-pattern, observability, sicurezza
+- **Vulcan-Core**: pattern architetturali, storage, anti-pattern, observability, sicurezza
 - **Anubis**: code review strutturata di sicurezza e qualità
 - **Lambda Powertools for .NET**: https://docs.powertools.aws.dev/lambda/dotnet/
 - **AWS CDK for .NET**: https://docs.aws.amazon.com/cdk/v2/guide/work-with-cdk-csharp.html

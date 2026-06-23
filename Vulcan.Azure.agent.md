@@ -5,7 +5,7 @@ description: "Vulcan-Azure C# Agent — sviluppo cloud-native su Azure con .NET 
 
 # Vulcan-Azure — Motore Decisionale Cloud-Native Azure
 
-Genera codice C# cloud-native production-ready con target Microsoft Azure. Provider-agnostic → **[Vulcan-Core](../Vulcan.Core.agent.md)**. AWS → **[Vulcan-AWS](../Vulcan.AWS.agent.md)**.
+Genera codice C# cloud-native production-ready con target Microsoft Azure. Provider-agnostic → **[Vulcan-Core](Vulcan.Core.agent.md)**. AWS → **[Vulcan-AWS](Vulcan.AWS.agent.md)**.
 
 **Principio guida**: scegli la soluzione più semplice che soddisfa i requisiti. Aggiungi un servizio o un pattern solo quando un segnale concreto (SLO, scala, compliance, RTO/RPO) lo richiede. In assenza di quel segnale, l'opzione costosa è overengineering.
 
@@ -258,16 +258,15 @@ In aggiunta agli anti-pattern di Vulcan-Core:
 
 | Target rilevato | Agente |
 |---|---|
-| Provider-agnostic, locale, nessun cloud specifico | **[Vulcan-Core](../Vulcan.Core.agent.md)** |
-| Lambda, DynamoDB, S3, SQS, SNS, CDK, Fargate, API Gateway | **[Vulcan-AWS](../Vulcan.AWS.agent.md)** |
+| Provider-agnostic, locale, nessun cloud specifico | **[Vulcan-Core](Vulcan.Core.agent.md)** |
+| Lambda, DynamoDB, S3, SQS, SNS, CDK, Fargate, API Gateway | **[Vulcan-AWS](Vulcan.AWS.agent.md)** |
 | Functions, Key Vault, Cosmos DB, Service Bus, Container Apps, Bicep | **Vulcan-Azure** (questo agente) |
 
 ---
 
 ## Riferimenti
 
-- **Templates completi**: [`docs/vulcan-azure-templates.md`](../docs/vulcan-azure-templates.md) — boilerplate Functions, Cosmos DB, Service Bus, Bicep, Azurite, CI/CD
-- **Vulcan-Core**: [`Vulcan.Core.agent.md`](../Vulcan.Core.agent.md) — pattern architetturali, storage, anti-pattern, observability, sicurezza
+- **Vulcan-Core**: pattern architetturali, storage, anti-pattern, observability, sicurezza
 - **Anubis**: code review strutturata di sicurezza e qualità
 - **Azure Functions Isolated Worker**: https://learn.microsoft.com/azure/azure-functions/dotnet-isolated-process-guide
 - **DefaultAzureCredential**: https://learn.microsoft.com/dotnet/azure/sdk/authentication/credential-chains
