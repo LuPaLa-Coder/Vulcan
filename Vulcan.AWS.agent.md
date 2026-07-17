@@ -16,7 +16,8 @@ Genera codice C# (.NET 10 LTS) e IaC per AWS. Provider-agnostic → **[Vulcan-Co
 | Regola | Dettaglio |
 |---|---|
 | `Nullable enable` | In ogni `.csproj` e `Directory.Build.props` |
-| `TreatWarningsAsErrors` | Con `WarningsNotAsErrors` per i NU1901-1904 |
+| `TreatWarningsAsErrors` | High/Critical (NU1903/NU1904) = **errori**; Low/Moderate (NU1901/NU1902) = warning; `NuGetAudit` mode=all (dettaglio in **[Vulcan-Core](Vulcan.Core.agent.md)**) |
+| Dipendenze pulite | **0 vulnerabili · 0 deprecati**; **0 outdated** su `net10.0` (vedi *Igiene Dipendenze — Specializzazione AWS*) |
 | `async`/`await` | Per ogni operazione I/O; `CancellationToken` propagato |
 | `IHttpClientFactory` | Mai `new HttpClient()` |
 | Auth via **IAM Roles** | Mai access key hardcoded; Secrets Manager per segreti |
@@ -166,8 +167,38 @@ Oltre agli anti-pattern standard di Vulcan-Core, segnala e correggi:
 | AWS6 | `AdministratorAccess`/wildcard su Role | policy custom con azioni esplicite |
 | AWS7 | DynamoDB `RemovalPolicy.DESTROY` in prod | `RETAIN` o `SNAPSHOT` |
 | AWS8 | Cold-start critico ignorato | valutare AOT o Provisioned Concurrency *solo se* viola un SLO (vedi Pattern Lambda) |
+| AWS9 | `AWSSDK` v2 monolitico o `Serialization.Json` (Newtonsoft) su Lambda | v3 modulare + `Serialization.SystemTextJson` (source-gen/AOT-ready) |
+| AWS10 | CDK v1 (`Amazon.CDK`, EOL) ancora in uso | migra a `Amazon.CDK.Lib` (v2) — BLOCKER |
 
 ---
+
+## Igiene Dipendenze — Specializzazione AWS
+
+Applica la procedura a 3 assi (vulnerabili/deprecati/outdated) e la migrazione a .NET 10 di **[Vulcan-Core](Vulcan.Core.agent.md)**. Qui solo i delta AWS.
+
+### Famiglie sotto controllo
+
+`AWSSDK.*` (SDK v3 modulare), `Amazon.Lambda.Core`, `Amazon.Lambda.Serialization.SystemTextJson`, `Amazon.Lambda.RuntimeSupport`, `Amazon.Lambda.Annotations`, `AWS.Lambda.Powertools.*`, `Amazon.CDK.Lib`.
+
+### Deprecati AWS — legacy → successore
+
+| Legacy (deprecato) | Successore | Nota |
+|---|---|---|
+| `AWSSDK` monolitico (v2) | `AWSSDK.*` modulari (v3) | installa solo i moduli usati (`AWSSDK.DynamoDBv2`, `AWSSDK.S3`, …) |
+| `Amazon.Lambda.Serialization.Json` (Newtonsoft) | `Amazon.Lambda.Serialization.SystemTextJson` | richiesto per source-gen/AOT |
+| `Amazon.CDK` (CDK v1, EOL) | `Amazon.CDK.Lib` (CDK v2) | CDK v1 fuori supporto: migrazione = BLOCKER |
+
+Sostituire questi pacchetti chiude sia l'asse "deprecati" sia gli anti-pattern **AWS9/AWS10**.
+
+### Migrazione a .NET 10 su Lambda
+
+- Il **runtime gestito** segue i rilasci .NET con ritardo: verifica se esiste il managed runtime `dotnetN` per la major target. In assenza usa **container image** (base `public.ecr.aws/lambda/dotnet`) oppure **custom runtime `provided.al2023`** (AOT con `Amazon.Lambda.RuntimeSupport`).
+- **ARM64/Graviton** resta il default anche dopo l'aggiornamento.
+- Aggiorna in modo coerente TFM (`.csproj`), base image (Dockerfile) e `Runtime.*` nello stack `Amazon.CDK.Lib`.
+
+### Outdated + AOT
+
+Su Lambda AOT (`provided.al2023`) ogni aggiornamento "outdated" deve restare **AOT-ready**: un update che introduce trim/AOT warning (reflection, serializzatori dinamici) è un **BLOCKER** per l'AOT → mantieni la versione compatibile o sostituisci il pacchetto, non disabilitare l'AOT.
 
 ## Guardrail Operativi
 
@@ -207,6 +238,8 @@ Oltre agli anti-pattern standard di Vulcan-Core, segnala e correggi:
 | RC-A4 | "crea Lambda" senza timeout | Imposta `Timeout` esplicito (→ AWS5); valuta `ReservedConcurrentExecutions` |
 | RC-A5 | input con `AKIA...` | Non riproduce la key, segnala AWS1 |
 | RC-A6 | "analizza il codice" senza file | Profilo read-only; nessuna scrittura/build/deploy |
+| RC-A7 | Lambda su `net8.0` con outdated | Migra a `net10.0` (runtime gestito o container/`provided.al2023`), poi azzera outdated |
+| RC-A8 | dipendenza `Amazon.CDK` (v1) o `AWSSDK` monolitico | Segnala deprecato (AWS9/AWS10), propone CDK v2 / SDK v3 modulare |
 
 ---
 

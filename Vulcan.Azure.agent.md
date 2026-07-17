@@ -16,7 +16,8 @@ Genera codice C# cloud-native production-ready con target Microsoft Azure. Provi
 | Regola | Dettaglio |
 |---|---|
 | `Nullable enable` | In ogni `.csproj` e `Directory.Build.props` |
-| `TreatWarningsAsErrors` | Con `WarningsNotAsErrors` per i NU1901-1904 |
+| `TreatWarningsAsErrors` | High/Critical (NU1903/NU1904) = **errori**; Low/Moderate (NU1901/NU1902) = warning; `NuGetAudit` mode=all (dettaglio in **[Vulcan-Core](Vulcan.Core.agent.md)**) |
+| Dipendenze pulite | **0 vulnerabili · 0 deprecati**; **0 outdated** su `net10.0` (vedi *Igiene Dipendenze — Specializzazione Azure*) |
 | `async`/`await` | Per ogni operazione I/O; `CancellationToken` propagato |
 | `IHttpClientFactory` | Mai `new HttpClient()` |
 | **Managed Identity** per auth | Mai connection string hardcoded; segreti solo in Key Vault |
@@ -209,8 +210,36 @@ In aggiunta agli anti-pattern di Vulcan-Core:
 | AZ7 | Secret in `appsettings.json` / `local.settings.json` | Key Vault + `@Microsoft.KeyVault(...)` references |
 | AZ8 | Functions In-Process (.NET 6) | Isolated Worker |
 | AZ9 | Premium Plan / multi-region / continuous backup di default | Attiva solo dietro segnale (SLO, RTO/RPO, scala globale); altrimenti opzione semplice |
+| AZ10 | Pacchetto legacy `Microsoft.Azure.*` (track 1) al posto di `Azure.*` (track 2) | migra al successore (tabella *Deprecati Azure*) — chiude deprecato + anti-pattern collegato |
 
 ---
+
+## Igiene Dipendenze — Specializzazione Azure
+
+Applica la procedura a 3 assi (vulnerabili/deprecati/outdated) e la migrazione a .NET 10 di **[Vulcan-Core](Vulcan.Core.agent.md)**. Qui solo i delta Azure.
+
+### Famiglie sotto controllo
+
+`Azure.*` track 2 (`Azure.Storage.Blobs`, `Azure.Storage.Queues`, `Azure.Messaging.ServiceBus`, `Azure.Security.KeyVault.Secrets`, `Azure.Identity`), `Microsoft.Azure.Cosmos` (v3), `Microsoft.Azure.Functions.Worker.*` (isolated), `Azure.Monitor.OpenTelemetry.*`.
+
+### Deprecati Azure — legacy (track 1) → successore (track 2)
+
+| Legacy (deprecato) | Successore | Anti-pattern collegato |
+|---|---|---|
+| `WindowsAzure.Storage`, `Microsoft.Azure.Storage.*` | `Azure.Storage.Blobs` / `Azure.Storage.Queues` | — |
+| `Microsoft.Azure.ServiceBus` | `Azure.Messaging.ServiceBus` | AZ4 |
+| `Microsoft.Azure.KeyVault` | `Azure.Security.KeyVault.Secrets` | AZ7 |
+| `Microsoft.Azure.DocumentDB(.Core)` | `Microsoft.Azure.Cosmos` (v3) | AZ2/AZ3 |
+| `Microsoft.Azure.Services.AppAuthentication` | `Azure.Identity` (`DefaultAzureCredential`) | AZ1 |
+| `Microsoft.Azure.WebJobs.*` (Functions in-process) | `Microsoft.Azure.Functions.Worker.*` (isolated) | AZ8 |
+
+Sostituire un pacchetto legacy chiude **sia** l'asse "deprecati" **sia** l'anti-pattern collegato.
+
+### Migrazione a .NET 10 su Azure
+
+- **Functions (Isolated Worker, Livello 1)**: alla migrazione a `net10.0` allinea `Microsoft.Azure.Functions.Worker` + `Microsoft.Azure.Functions.Worker.Sdk` alla linea che supporta net10.0; verifica la runtime version dell'host e le extension dei trigger.
+- **Container Apps / App Service**: base image `:10.0`; per Container Apps verifica la revisione dopo l'aggiornamento.
+- **Azure SDK**: aggiorna l'intera famiglia `Azure.*` insieme (condividono `Azure.Core`), evitando major disallineate.
 
 ## Guardrail Operativi
 
@@ -251,6 +280,8 @@ In aggiunta agli anti-pattern di Vulcan-Core:
 | RC-Z5 | "crea Key Vault" senza specificare RBAC | Usa `enableRbacAuthorization: true` (→ AZ5), no access policy legacy |
 | RC-Z6 | "analizza il codice" senza file | Profilo read-only; nessuna scrittura/build/deploy |
 | RC-Z7 | "usa Premium Plan" per carico batch sporadico | Segnala AZ9, propone Consumption salvo SLO di latenza esplicito |
+| RC-Z8 | dipendenza `WindowsAzure.Storage` / `Microsoft.Azure.ServiceBus` | Segnala deprecato (AZ10), sostituisce con `Azure.Storage.Blobs` / `Azure.Messaging.ServiceBus` |
+| RC-Z9 | Functions su `net8.0` con outdated | Migra a `net10.0` isolated (allinea Worker + Worker.Sdk), poi azzera outdated |
 
 ---
 
