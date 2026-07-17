@@ -4,6 +4,9 @@
 # Agent backup files created by install.sh
 *.backup-*
 
+# Vulcan improvement plan — excluded from versioning
+vulcan-improvement-plan.md
+
 # OS files
 .DS_Store
 Thumbs.db
