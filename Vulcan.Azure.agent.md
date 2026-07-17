@@ -69,6 +69,9 @@ Ogni riga: **usa SE** (segnale di attivazione) vs **evita / overengineering SE**
 | **Durable Functions** | workflow stateful/long-running, fan-out/fan-in, checkpoint, human-in-the-loop | orchestrazione semplice esprimibile nel codice con `await` sequenziali → niente stato esterno |
 | **Container Apps** | container, scaling KEDA, microservizi, dapr | singola API stateless senza container → Functions o App Service |
 | **App Service** | web app/API tradizionale always-on, deployment slot | workload event-driven → Functions |
+| **Logic Apps** | orchestrazione low-code/no-code, integrazione SaaS (Salesforce, SAP, Office 365), connettori prebuilt, workflow visivo, SLA enterprise | orchestrator che richiede controllo granulare, branching condizionale complesso, pattern di codice → **Durable Functions** |
+
+**Logic Apps vs Functions vs Durable Functions**: Logic Apps è low-code per integrazione SaaS; Functions è code-first per event-driven; Durable Functions estende Functions con orchestrazione stateful. Se il workflow è semplice e lineare, resta su Functions + `await` sequenziali.
 
 ### Storage
 
@@ -78,6 +81,15 @@ Ogni riga: **usa SE** (segnale di attivazione) vs **evita / overengineering SE**
 | **Azure SQL** | modello relazionale, integrità referenziale, query ad-hoc complesse | accesso key-value globale ad altissima scala → Cosmos DB |
 | **Blob Storage** | file/oggetti, media, backup | dati strutturati interrogabili → DB |
 | **Redis Cache** | cache hot-path, sessioni, riduzione RU/latenza misurata | nessun problema di latenza/costo dimostrato: complessità inutile |
+
+**Azure Cache for Redis — tier decision**:
+
+| Tier | QUANDO | Overengineering SE |
+|---|---|---|
+| **Basic** | dev/test, cache non critica, nessun SLA | produzione → Standard o superiore |
+| **Standard** | produzione, SLA 99.9%, replica, clustering semplice | HA multi-region → Premium |
+| **Premium** | persistenza Redis, clustering avanzato, VNet injection, geo-replication, throughput elevato | carico modesto → Standard basta |
+| **Enterprise** | Redis on Flash, active geo-replication, module RedisBloom/RediSearch, throughput 2GB/s+ | nessun requisito di latenza sub-ms globale → Premium
 
 ### Messaging
 
@@ -103,6 +115,19 @@ Ogni riga: **usa SE** (segnale di attivazione) vs **evita / overengineering SE**
 - **Premium Plan / always-ready / VNet**: solo se un SLO di latenza o un requisito di rete lo impone (vedi tabella Compute). Default = Consumption.
 - **Deployment slot (staging→prod swap)**: quando serve swap senza downtime; per servizi a basso traffico o dev può essere overhead non necessario.
 
+#### Durable Functions — Catalogo Pattern
+
+| Pattern | Descrizione | QUANDO |
+|---|---|---|
+| **Function Chaining** | sequenza di funzioni eseguite in ordine, output di una = input della successiva | pipeline lineare (validate → process → persist → notify) |
+| **Fan-out/Fan-in** | esecuzione parallela di N task, attesa del completamento di tutti | batch processing, check multipli, aggregazione |
+| **Async HTTP API** | avvio long-running operation via HTTP, polling stato con `CreateCheckStatusResponse()` | elaborazione > 5 min, API callback/polling |
+| **Monitor** | poll di una risorsa esterna finché una condizione non è soddisfatta | attesa approvazione, completamento job esterno |
+| **Human-in-the-loop** | sospensione del workflow in attesa di input esterno (posta, notifica, API) | approvazioni manuali, review, escalation |
+| **External Events** | `WaitForExternalEvent<T>()` per ricevere eventi da sorgenti esterne | webhook callback, input utente, notifiche |
+
+Regola: **non** usare Durable Functions per orchestrazioni semplici (< 3 step, nessuna attesa esterna) — il codice sequenziale con `await` è più facile da leggere e testare.
+
 ### Cosmos DB
 
 - `CosmosClient` **singleton** (Livello 1). Query **sempre parametrizzate** (mai string interpolation con dati utente).
@@ -118,7 +143,28 @@ Ogni riga: **usa SE** (segnale di attivazione) vs **evita / overengineering SE**
 - **DLQ** con `MaxDeliveryCount = 5`. `CorrelationId` propagato su ogni messaggio.
 - Batch con `TryAddMessage` (safe batching). **Session-based** solo quando serve ordering garantito per chiave (overhead se l'ordine non conta).
 
-### Security & Identity
+### Container Apps — Revisioni + Blue-Green
+
+- Ogni modifica alla container app crea una **revisione** (immutabile, autoscaling indipendente).
+- **Revision suffix** (`myapp--abc123`) per routing esplicito.
+- **Traffic splitting** tra revisioni per blue-green, canary, A/B testing:
+  ```bicep
+  resource app 'Microsoft.App/containerApps@2023-05-01' = {
+    properties: {
+      configuration: {
+        ingress: {
+          traffic: [
+            { revisionName: 'myapp--abc123', weight: 90 }
+            { revisionName: 'myapp--def456', weight: 10  label: 'canary' }
+          ]
+        }
+      }
+    }
+  }
+  ```
+- Usa `az containerapp revision activate/deactivate` per attivare/disattivare revisioni.
+- **Blue-green**: attiva nuova revisione con 100% traffic, verifica, poi deattiva la vecchia.
+- **Rollback**: riporta il 100% del traffico sulla revisione stabile precedente.
 
 - Managed Identity **user-assigned** per autenticare i servizi. Una sola credential condivisa via `AddAzureClients(... .UseCredential(...))`.
 - `DefaultAzureCredential` in sviluppo; `ManagedIdentityCredential` esplicita in produzione (chain più corta e prevedibile).
@@ -211,6 +257,53 @@ In aggiunta agli anti-pattern di Vulcan-Core:
 | AZ8 | Functions In-Process (.NET 6) | Isolated Worker |
 | AZ9 | Premium Plan / multi-region / continuous backup di default | Attiva solo dietro segnale (SLO, RTO/RPO, scala globale); altrimenti opzione semplice |
 | AZ10 | Pacchetto legacy `Microsoft.Azure.*` (track 1) al posto di `Azure.*` (track 2) | migra al successore (tabella *Deprecati Azure*) — chiude deprecato + anti-pattern collegato |
+| AZ11 | Premium Redis senza necessità | Standard con SLA 99.9% basta per la maggior parte dei carichi |
+| AZ12 | Logic Apps per orchestrazione semplice di codice | Functions + `await` sequenziali è più leggero |
+| AZ13 | Container Apps senza traffic splitting per deploy | Blue-green/canary riduce il rischio di deploy |
+| AZ14 | Durable Functions per pipeline lineare < 3 step | codice sequenziale + `await` è più semplice |
+
+---
+
+## Testing Cloud-Native Azure
+
+### Mocking SDK Azure
+
+Usa **Moq** (o NSubstitute) per mockare i client Azure SDK:
+
+```csharp
+var mockCosmosClient = new Mock<CosmosClient>();
+var mockContainer = new Mock<Container>();
+mockContainer.Setup(x => x.GetItemAsync<MyItem>(It.IsAny<string>(), It.IsAny<PartitionKey>(), null, default))
+    .ReturnsAsync(Response.FromValue(new MyItem(), new Mock<Response>().Object));
+```
+
+### Integration test con Azurite + Cosmos DB Emulator
+
+```yaml
+# docker-compose.yml per test
+services:
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    ports: ["10000:10000", "10001:10001", "10002:10002"]
+  cosmos-emulator:
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+    ports: ["8081:8081"]
+```
+
+```csharp
+// TestContainers per test .NET
+var azurite = new AzuriteBuilder().Build();
+await azurite.StartAsync();
+```
+
+### IaC testing
+
+- **PSRule for Azure**: validazione delle risorse Bicep/ARM contro le best practice Well-Architected:
+  ```bash
+  Install-Module -Name PSRule.Rules.Azure
+  Export-AzRuleTemplateData -TemplateFile infra/main.bicep | Invoke-PSRule -Module PSRule.Rules.Azure
+  ```
+- **ARM-TTK** (Template Test Toolkit): validazione strutturale dei template ARM/Bicep.
 
 ---
 

@@ -233,6 +233,43 @@ public sealed class OrderGrpcService : Orders.OrdersBase
 }
 ```
 
+### API Versioning
+
+Applica versioning esplicito quando l'API è pubblica, consumer esterni, o breaking change sono inevitabili. Salta per API interne monolitiche a consumer unico.
+
+| Strategy | Struttura | QUANDO |
+|---|---|---|
+| **URL path** | `/api/v1/orders`, `/api/v2/orders` | più leggibile, routing esplicito. **Default** |
+| **Query string** | `/api/orders?api-version=1` | URL pulito, facile da cambiare lato client |
+| **Header** | `X-API-Version: 1` | URL invariato, versioning a livello di trasporto |
+| **Content negotiation** | `Accept: application/vnd.myapp.v1+json` | massima flessibilità, più complesso |
+
+```csharp
+// URL path versioning con MapGroup
+var v1 = app.MapGroup("/api/v1/items");
+v1.MapGet("/", ...);
+
+var v2 = app.MapGroup("/api/v2/items");
+v2.MapGet("/", ...);
+```
+
+Usa `Asp.Versioning.Http` per versioning dichiarativo con Controller/Minimal API. **Non** versionare se l'API ha un solo consumer e breaking change sono gestiti con deploy coordinati.
+
+### OpenAPI / Swagger
+
+- `Microsoft.AspNetCore.OpenApi` + `Scalar.AspNetCore` o `Swashbuckle` per documentazione interattiva.
+- Default: `AddOpenApi()` con descrizioni esplicite su gruppo/endpoint:
+
+```csharp
+itemsGroup.MapGet("/", ...)
+    .WithName("GetItems")
+    .WithDescription("Restituisce la lista paginata di items")
+    .WithOpenApi();
+```
+
+- Per API pubbliche: genera file OpenAPI spec in CI e pubblicalo (es. SwaggerHub, Stoplight).
+- Usa `[ExcludeFromDescription]` per endpoint interni/sanità.
+
 ### Native AOT
 
 Abilita (`<PublishAot>true</PublishAot>`) solo quando il cold start è critico (serverless, CLI). Costo: vincoli stringenti.

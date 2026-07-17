@@ -57,22 +57,29 @@ Ogni agente è completo e auto-sufficiente per il suo target. Scegli l'agente gi
 ### Quando usare Vulcan-AWS
 
 - Lambda function (API Gateway trigger, S3 trigger, SQS trigger)
-- DynamoDB data access
-- SQS/SNS messaging
+- DynamoDB data access (TTL + Streams, single-table design)
+- SQS/SNS messaging, EventBridge Pipes
 - Step Functions workflow
-- ECS Fargate container
-- CDK infrastructure (C#)
-- CloudWatch observability
+- API Gateway (REST API / HTTP API v2)
+- ECS Fargate container, EKS
+- CloudFront + Lambda@Edge + CloudFront Functions
+- CDK infrastructure (C#) con cdk-nag
+- Secrets Manager / Parameter Store
+- CloudWatch observability, Logs Insights
+- Testing cloud-native con LocalStack + TestContainers
 
 ### Quando usare Vulcan-Azure
 
-- Azure Functions (HTTP trigger, Service Bus trigger, Timer trigger)
-- Cosmos DB data access
-- Service Bus messaging
-- Durable Functions workflow
-- Container Apps
-- Bicep infrastructure
-- Application Insights observability
+- Azure Functions (HTTP trigger, Service Bus trigger, Timer trigger, Durable Functions)
+- Cosmos DB data access (query parametrizzate, soft delete, multi-region)
+- Service Bus messaging (sessioni, DLQ, batch)
+- Container Apps (revisioni, blue-green, traffic splitting)
+- App Service, Logic Apps
+- Bicep infrastructure + PSRule validation
+- Application Insights + OpenTelemetry
+- Azure Cache for Redis (tier decision)
+- Managed Identity, Key Vault, RBAC
+- Testing cloud-native con Azurite + Cosmos DB Emulator + TestContainers
 
 ### Progetti Multi-Cloud o Ibridi
 

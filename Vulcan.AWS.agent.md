@@ -83,6 +83,8 @@ Tabella di default + trigger per deviare. Non promuovere il servizio "più poten
 
 **Single-table design DynamoDB**: vale QUANDO gli access pattern sono noti, stabili e correlati, e serve minimizzare round-trip/costo. È overengineering QUANDO i pattern sono ancora in evoluzione o gli aggregati sono indipendenti: un design multi-tabella è più leggibile e manutenibile. In dubbio, parti multi-tabella e consolida quando i pattern si stabilizzano.
 
+**DynamoDB TTL + Streams**: usa TTL (`ttlAttributeName`) per expiry automatico di record temporanei (sessioni, eventi, flag). Combina con **DynamoDB Streams** per catturare l'evento di cancellazione e triggerare una Lambda (es. cleanup cascade, notifica, audit). Costo trascurabile rispetto a scan periodici. Attento: TTL non garantisce cancellazione immediata — finestra di 48h max per l'eliminazione effettiva.
+
 ### Messaging
 
 | Scegli | QUANDO |
@@ -90,7 +92,44 @@ Tabella di default + trigger per deviare. Non promuovere il servizio "più poten
 | **SQS (+DLQ)** | consegna garantita punto-punto, disaccoppiamento producer/consumer, throttling del consumer |
 | **SNS** | fan-out 1→N a sottoscrittori multipli |
 | **EventBridge** | routing basato su contenuto/regole, integrazione con eventi di servizi AWS/SaaS |
+| **EventBridge Pipes** | source-target point-to-point (es. SQS→Step Functions, DynamoDB Streams→SQS) con filtro, arricchimento e trasformazione, **senza** scrivere codice Lambda intermedio. Più semplice di Step Functions per una singola connessione source→target |
 | **Kinesis** | streaming ordinato ad alto volume, replay, finestre temporali (non semplice queue) |
+
+**EventBridge Pipes vs Step Functions**: usa **Pipes** per pipeline lineari source→target (trasforma, filtra, inoltra). Usa **Step Functions** per workflow multi-step con branch, fan-out, attese e orchestrazione human-in-loop. Pipes è più economico e semplice per il caso d'uso lineare.
+
+#### API Gateway — REST API vs HTTP API (v2)
+
+| Scegli | QUANDO | Overengineering SE |
+|---|---|---|
+| **HTTP API (v2)** | API semplici, costo inferiore, latenza ridotta. Supporta OIDC/OAuth 2.0, CORS, throttling di base. **Default per nuovi progetti**. | servono API keys, usage plans, WAF, caching avanzato, trasformazioni richiesta/risposta → REST API |
+| **REST API** | API pubbliche con monetizzazione (usage plans), WAF obbligatorio, request/response mapping con VTL, caching per-stage, client certificate auth | tutto ciò che HTTP API già copre → paga meno e ottieni latenza migliore |
+
+#### API Gateway — Private vs Public
+
+Usa **Private API Gateway** (VPC Endpoint) *quando* l'API deve essere accessibile solo da risorse dentro il VPC. Public *quando* serve accesso da internet (browser, client esterni).
+
+---
+
+#### Security — Secrets Manager vs Parameter Store
+
+| Scegli | QUANDO | Evita SE |
+|---|---|---|
+| **Secrets Manager** | password, credenziali DB, API key, token OAuth. Rotation automatica nativa per RDS, Redshift, DocumentDB. | password semplici senza rotation → Parameter Store SecureString costa meno |
+| **Parameter Store** | configurazione non sensibile, feature flag, AMI IDs. SecureString per segreti a basso costo ($0.05/param) | rotation automatica obbligatoria → Secrets Manager (non ha rotation nativa) |
+
+Regola pratica: **Secrets Manager** per tutto ciò che cambia frequentemente o richiede rotation. **Parameter Store** per configurazione statica o segreti con rotation manuale.
+
+---
+
+#### Edge — CloudFront + Lambda@Edge
+
+| Servizio | QUANDO |
+|---|---|
+| **CloudFront** | CDN globale, terminazione TLS, georestriction, DDoS protection (CloudFront + WAF), caching di contenuti statici/dinamici |
+| **Lambda@Edge** | trasformazione leggera (cookies, header, URL rewrite, A/B testing) ai punti di presenza CloudFront. Node.js/Python, max 5 sec / 128MB |
+| **CloudFront Functions** | manipolazione richiesta/risposta sub-ms (header rewrite, redirect, cache key). 1ms, 2MB, JavaScript only. Preferisci a Lambda@Edge per operazioni semplici |
+
+Usa **CloudFront** davanti a API Gateway *quando*: utenti distribuiti globalmente (riduci latenza con edge caching), serve WAF integrato + georestriction, HTTPS con certificato ACM personalizzato.
 
 ---
 
@@ -169,6 +208,10 @@ Oltre agli anti-pattern standard di Vulcan-Core, segnala e correggi:
 | AWS8 | Cold-start critico ignorato | valutare AOT o Provisioned Concurrency *solo se* viola un SLO (vedi Pattern Lambda) |
 | AWS9 | `AWSSDK` v2 monolitico o `Serialization.Json` (Newtonsoft) su Lambda | v3 modulare + `Serialization.SystemTextJson` (source-gen/AOT-ready) |
 | AWS10 | CDK v1 (`Amazon.CDK`, EOL) ancora in uso | migra a `Amazon.CDK.Lib` (v2) — BLOCKER |
+| AWS11 | API Gateway REST API per API semplici | HTTP API (v2) è più economico e veloce |
+| AWS12 | Secrets Manager per segreti statici senza rotation | Parameter Store SecureString ($0.05/param) |
+| AWS13 | CloudFront mancante dietro API Gateway globale | CloudFront + WAF riduce latenza e protegge |
+| AWS14 | Scan periodico per expiry di record temporanei | DynamoDB TTL + Streams è più economico |
 
 ---
 
@@ -199,6 +242,47 @@ Sostituire questi pacchetti chiude sia l'asse "deprecati" sia gli anti-pattern *
 ### Outdated + AOT
 
 Su Lambda AOT (`provided.al2023`) ogni aggiornamento "outdated" deve restare **AOT-ready**: un update che introduce trim/AOT warning (reflection, serializzatori dinamici) è un **BLOCKER** per l'AOT → mantieni la versione compatibile o sostituisci il pacchetto, non disabilitare l'AOT.
+
+## Testing Cloud-Native AWS
+
+### Mocking SDK AWS
+
+Usa **Amazon.Lambda.TestUtilities** per Lambda context finti e **Moq** (o NSubstitute) per mockare le interfacce `IAmazonDynamoDB`, `IAmazonSQS`, `IAmazonS3`:
+
+```csharp
+var mockDynamoDb = new Mock<IAmazonDynamoDB>();
+mockDynamoDb.Setup(x => x.GetItemAsync(It.IsAny<GetItemRequest>(), default))
+    .ReturnsAsync(new GetItemResponse { Item = new Dictionary<string, AttributeValue> { ... } });
+```
+
+### Integration test con LocalStack
+
+```yaml
+# docker-compose.yml per test
+services:
+  localstack:
+    image: localstack/localstack:latest
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: dynamodb,sqs,s3,lambda
+```
+
+```csharp
+// TestContainers per test .NET
+var localstack = new LocalStackBuilder()
+    .WithServices(LocalStackService.DynamoDB, LocalStackService.SQS)
+    .Build();
+await localstack.StartAsync();
+```
+
+### IaC testing
+
+- **cdk-nag**: pacchetto `cdk-nag` per validare gli stack CDK contro AWS Well-Architected rules. Integra in `cdk synth`:
+  ```csharp
+  Aspects.of(stack).Add(new AwsSolutionsChecks());
+  ```
+- **TaskCat** (CloudFormation): test multi-region dei template SAM/CloudFormation.
 
 ## Guardrail Operativi
 

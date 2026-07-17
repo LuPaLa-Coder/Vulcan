@@ -6,9 +6,9 @@ Vulcan è una famiglia di tre agenti specializzati per lo sviluppo C# e .NET 10 
 
 | Agente | Target | File |
 |---|---|---|
-| **Vulcan-Core** | Provider-agnostic: API REST, Minimal API, gRPC, console, librerie, worker | `Vulcan.Core.agent.md` |
-| **Vulcan-AWS** | AWS cloud-native: Lambda, DynamoDB, SQS, SNS, S3, ECS, CDK | `Vulcan.AWS.agent.md` |
-| **Vulcan-Azure** | Azure cloud-native: Functions, Cosmos DB, Service Bus, Container Apps, Bicep | `Vulcan.Azure.agent.md` |
+| **Vulcan-Core** | Provider-agnostic: API REST, Minimal API, gRPC, console, librerie, worker + API versioning, OpenAPI | `Vulcan.Core.agent.md` |
+| **Vulcan-AWS** | AWS cloud-native: Lambda, DynamoDB, SQS, SNS, S3, ECS, CDK + EventBridge Pipes, CloudFront, API GW v2, LocalStack, cdk-nag | `Vulcan.AWS.agent.md` |
+| **Vulcan-Azure** | Azure cloud-native: Functions, Cosmos DB, Service Bus, Container Apps, Bicep + Durable Functions catalog, Logic Apps, blue-green, Azurite, PSRule | `Vulcan.Azure.agent.md` |
 
 **Unico formato: Agent** — installabile globalmente su tutti i coding agent (Claude Code, OpenCode, GitHub Copilot, Cursor, Windsurf, Codex).
 
@@ -28,7 +28,7 @@ La soluzione: **tre agenti specializzati, invocati on-demand**. Ogni agente è u
 ## Caratteristiche Principali
 
 - **Architettura Adattiva** — Flat, Vertical Slice, Clean Architecture, N-Tier in base alla complessità
-- **Cloud-Native** — Pattern specifici per AWS (CDK, Lambda Powertools) e Azure (Bicep, Managed Identity)
+- **Cloud-Native** — Pattern specifici per AWS (CDK, Lambda Powertools, API Gateway v2, EventBridge Pipes, CloudFront) e Azure (Bicep, Managed Identity, Durable Functions catalog, Container Apps blue-green)
 - **Minimal APIs** — Default per API REST semplici, con MapGroup, IEndpointFilter, OpenAPI
 - **Result Pattern con OneOf** — Error handling type-safe senza eccezioni
 - **.NET Aspire** — Orchestrazione locale per progetti multi-servizio
@@ -37,6 +37,8 @@ La soluzione: **tre agenti specializzati, invocati on-demand**. Ogni agente è u
 - **Observability** — Serilog strutturato, OpenTelemetry, health checks
 - **Sicurezza** — IAM Roles / Managed Identity, Key Vault, least privilege, SBOM
 - **Supply Chain** — Central Package Management, lock file, package source mapping
+- **Testing Cloud-Native** — LocalStack (AWS), Azurite + Cosmos DB Emulator (Azure), TestContainers, cdk-nag, PSRule
+- **API Versioning** — URL path, query string, header e content negotiation strategies
 
 ---
 
@@ -169,8 +171,8 @@ Vulcan/
 | Scenario | Agente |
 |---|---|
 | Console app, libreria, API generica, gRPC service | **Vulcan-Core** |
-| Lambda, DynamoDB, S3, SQS, SNS, ECS, CDK | **Vulcan-AWS** |
-| Functions, Cosmos DB, Service Bus, Container Apps, Bicep | **Vulcan-Azure** |
+| Lambda, DynamoDB, S3, SQS, SNS, ECS, CDK, API Gateway, CloudFront, EventBridge Pipes | **Vulcan-AWS** |
+| Functions, Cosmos DB, Service Bus, Container Apps, Bicep, Durable Functions, Logic Apps | **Vulcan-Azure** |
 | Progetto multi-cloud o ibrido | Inizia con **Vulcan-Core**, poi consulta AWS/Azure per le sezioni cloud |
 
 ---
