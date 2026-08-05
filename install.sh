@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 #  Vulcan C# Agent — Global Installer v3.0
-#  Installa Vulcan-Core, Vulcan-AWS e Vulcan-Azure per tutti i coding agent
+#  Installa Vulcan-Dispatch, Vulcan-Core, Vulcan-AWS, Vulcan-Azure e Vulcan-SCA per tutti i coding agent
 #  rilevati con frontmatter nativo:
 #  Claude Code · OpenCode · GitHub Copilot · Cursor · Windsurf · Codex
 #
@@ -26,11 +26,12 @@ RED='\033[0;31m'   GREEN='\033[0;32m'   YELLOW='\033[1;33m'
 CYAN='\033[0;36m'  BOLD='\033[1m'      NC='\033[0m'
 
 # ── Configurazione ───────────────────────────────────────────────────────────
-VULCAN_VERSION="3.1.0"
+VULCAN_VERSION="3.2.0"
 REPO_URL="https://raw.githubusercontent.com/LuPaLa-Coder/Vulcan/main"
 
-# Quattro agenti Vulcan — Core (Generic), AWS, Azure, SCA
+# Cinque agenti Vulcan — Dispatch, Core (Generic), AWS, Azure, SCA
 AGENT_FILES=(
+    "Vulcan.Dispatch.agent.md"
     "Vulcan.Core.agent.md"
     "Vulcan.AWS.agent.md"
     "Vulcan.Azure.agent.md"
@@ -43,6 +44,9 @@ LEGACY_AGENT_FILE="Vulcan.agent.md"
 # Descrizioni per frontmatter (funzione invece di array associativo per compatibilità POSIX)
 get_agent_description() {
     case "$1" in
+        "Vulcan.Dispatch.agent.md")
+            echo 'Vulcan-Dispatch — Agente Smistatore: rileva automaticamente il target (Generic/AWS/Azure) e il tipo di task (code-gen, SCA), poi delega all-agente Vulcan specializzato corretto. Usare come entry point predefinito per qualsiasi richiesta .NET.'
+            ;;
         "Vulcan.Core.agent.md")
             echo 'Vulcan-Core C# Agent — sviluppo C# moderno (.NET 10 LTS), provider-agnostic con Serilog + OpenTelemetry, LiteDB/MongoDB/PostgreSQL, supply-chain hardened e pattern architetturali puliti. Usare per GENERARE codice C# in contesto Generic; per AWS usare Vulcan-AWS, per Azure usare Vulcan-Azure. Per CODE REVIEW usare Anubis.'
             ;;
@@ -66,7 +70,8 @@ TEMPLATE_FILES=(
 )
 
 # Cache per i corpi degli agenti (scaricati/letti una volta sola)
-# Quattro variabili invece di array associativo per compatibilità POSIX
+# Cinque variabili invece di array associativo per compatibilità POSIX
+_BODY_DISPATCH=""
 _BODY_CORE=""
 _BODY_AWS=""
 _BODY_AZURE=""
@@ -75,6 +80,7 @@ _BODY_SCA=""
 # Mappa il nome file agente al nome della variabile cache
 get_body_varname() {
     case "$1" in
+        "Vulcan.Dispatch.agent.md") echo "_BODY_DISPATCH" ;;
         "Vulcan.Core.agent.md") echo "_BODY_CORE" ;;
         "Vulcan.AWS.agent.md")  echo "_BODY_AWS" ;;
         "Vulcan.Azure.agent.md") echo "_BODY_AZURE" ;;
@@ -87,7 +93,7 @@ print_banner() {
     echo -e "${CYAN}${BOLD}"
     echo "  ⚡ Vulcan C# Agent — Global Installer v${VULCAN_VERSION}"
     echo -e "${NC}"
-    echo "  C# .NET 10 LTS · Vulcan-Core · Vulcan-AWS · Vulcan-Azure · Vulcan-SCA"
+    echo "  C# .NET 10 LTS · Vulcan-Dispatch · Vulcan-Core · Vulcan-AWS · Vulcan-Azure · Vulcan-SCA"
     echo "  Cloud-Native Development Agents"
     echo ""
 }
@@ -241,10 +247,11 @@ EOF
 }
 
 # Estrae il nome breve dell'agente dal filename
-# Vulcan.Core.agent.md → Core, Vulcan.AWS.agent.md → AWS, Vulcan.Azure.agent.md → Azure, Vulcan.SCA.agent.md → SCA
+# Vulcan.Dispatch.agent.md → Dispatch, Vulcan.Core.agent.md → Core, Vulcan.AWS.agent.md → AWS, Vulcan.Azure.agent.md → Azure, Vulcan.SCA.agent.md → SCA
 get_agent_short_name() {
     local agent_file="$1"
-    if [[ "$agent_file" == *".Core."* ]]; then echo "Core"
+    if [[ "$agent_file" == *".Dispatch."* ]]; then echo "Dispatch"
+    elif [[ "$agent_file" == *".Core."* ]]; then echo "Core"
     elif [[ "$agent_file" == *".AWS."* ]]; then echo "AWS"
     elif [[ "$agent_file" == *".Azure."* ]]; then echo "Azure"
     elif [[ "$agent_file" == *".SCA."* ]]; then echo "SCA"
@@ -470,7 +477,7 @@ install_local() {
 
     mkdir -p "$dest_dir"
 
-    # Installa tutti e quattro gli agenti localmente con frontmatter Claude
+    # Installa tutti e cinque gli agenti localmente con frontmatter Claude
     local installed=0
     for agent_file in "${AGENT_FILES[@]}"; do
         local dest="${dest_dir}/${agent_file}"
@@ -496,12 +503,16 @@ install_local() {
     # Template
     copy_templates "$dest_dir"
 
-    # Crea settings.json Claude Code con tutti e quattro gli agenti
+    # Crea settings.json Claude Code con tutti e cinque gli agenti
     local settings="${local_dir}/.claude/settings.json"
     if [[ ! -f "$settings" ]]; then
         cat > "$settings" <<'SETTINGS'
 {
   "agents": {
+    "Vulcan-Dispatch": {
+      "description": "Vulcan-Dispatch — entry point e smistatore automatico",
+      "path": ".claude/agents/Vulcan.Dispatch.agent.md"
+    },
     "Vulcan-Core": {
       "description": "Vulcan-Core C# Agent — sviluppo .NET provider-agnostic",
       "path": ".claude/agents/Vulcan.Core.agent.md"
@@ -589,9 +600,11 @@ main() {
                 echo "  codex     — OpenAI Codex"
                 echo ""
                 echo "Agenti Vulcan installati:"
+                echo "  Vulcan-Dispatch — entry point e smistatore automatico"
                 echo "  Vulcan-Core   — sviluppo .NET provider-agnostic"
                 echo "  Vulcan-AWS    — sviluppo cloud-native AWS (Lambda, DynamoDB, SQS, CDK)"
                 echo "  Vulcan-Azure  — sviluppo cloud-native Azure (Functions, Cosmos DB, Service Bus, Bicep)"
+                echo "  Vulcan-SCA    — analisi e remediation dipendenze NuGet"
                 exit 0
                 ;;
             *)
@@ -607,13 +620,13 @@ main() {
         if [[ -n "$target_agent" ]]; then
             echo -e "${YELLOW}⚠${NC} --local e --agent sono mutualmente esclusivi. --local installa nella directory corrente."
         fi
-        echo -e "${BOLD}Installazione locale di Vulcan (Core + AWS + Azure)${NC}"
+        echo -e "${BOLD}Installazione locale di Vulcan (Dispatch + Core + AWS + Azure + SCA)${NC}"
         echo ""
         install_local
         echo ""
-        echo -e "${GREEN}${BOLD}✓${NC} Vulcan installato localmente!"
+        echo -e "${GREEN}${BOLD}✓${NC} Vulcan installato localmente (Dispatch + Core + AWS + Azure + SCA)!"
         echo ""
-        echo "  Agenti disponibili: Vulcan-Core, Vulcan-AWS, Vulcan-Azure"
+        echo "  Agenti disponibili: Vulcan-Dispatch, Vulcan-Core, Vulcan-AWS, Vulcan-Azure, Vulcan-SCA"
         echo "  Per usarli: seleziona l'agente dal menu quando richiesto."
         exit 0
     fi
@@ -636,7 +649,7 @@ main() {
     fi
 
     # ── Modalità: Install ────────────────────────────────────────────────
-    echo -e "${BOLD}Installazione globale di Vulcan (Core + AWS + Azure)${NC}"
+    echo -e "${BOLD}Installazione globale di Vulcan (Dispatch + Core + AWS + Azure + SCA)${NC}"
     echo -e "  OS rilevato: ${CYAN}${OS}${NC}"
     echo ""
 
@@ -677,7 +690,7 @@ main() {
     fi
 
     echo ""
-    echo -e "${CYAN}${BOLD}Vulcan${NC} — Vulcan-Core · Vulcan-AWS · Vulcan-Azure. ${BOLD}Ready.${NC}"
+    echo -e "${CYAN}${BOLD}Vulcan${NC} — Vulcan-Dispatch · Vulcan-Core · Vulcan-AWS · Vulcan-Azure · Vulcan-SCA. ${BOLD}Ready.${NC}"
 }
 
 main "$@"

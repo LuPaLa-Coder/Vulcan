@@ -99,6 +99,249 @@ Ogni riga: **usa SE** (segnale di attivazione) vs **evita / overengineering SE**
 | **Event Grid** | pub/sub reattivo, routing eventi discreti, integrazione serverless |
 | **Event Hubs** | streaming ad alto volume, telemetria, ingestion analytics |
 
+#### API Management — Azure APIM
+
+Usa **Azure API Management** *quando* hai API pubbliche/partner con:
+- Rate limiting / throttling per consumer
+- API key / OAuth / subscription management
+- Trasformazione richieste/risposte (XML↔JSON, header manipulation)
+- Developer portal per terze parti
+- Monetizzazione (piani a consumo)
+- Versioning centralizzato + revisioning
+
+**Non usare** per API interna con consumer unico — overhead di configurazione non giustificato.
+
+**Bicep: APIM + Policy Rate Limiting**
+
+```bicep
+resource apim 'Microsoft.ApiManagement/service@2023-05-01-preview' = {
+  name: 'apim-${projectName}'
+  location: location
+  sku: {
+    name: 'Developer'  // Developer = dev/test (~$50/mese); Standard = prod (~$400/mese); Premium = HA/Enterprise
+    capacity: 1
+  }
+  properties: {
+    publisherEmail: publisherEmail
+    publisherName: publisherName
+  }
+}
+
+// Policy globale: rate limit + CORS
+resource globalPolicy 'Microsoft.ApiManagement/service/policies@2023-05-01-preview' = {
+  parent: apim
+  name: 'policy'
+  properties: {
+    format: 'rawxml'
+    value: '''
+      <policies>
+        <inbound>
+          <rate-limit calls="100" renewal-period="60" />
+          <rate-limit-by-key calls="1000" renewal-period="3600"
+            counter-key="@(context.Request.Headers.GetValueOrDefault("Ocp-Apim-Subscription-Key","anonymous"))" />
+          <cors>
+            <allowed-origins>
+              <origin>https://${projectName}.com</origin>
+            </allowed-origins>
+            <allowed-methods>
+              <method>GET</method>
+              <method>POST</method>
+              <method>PUT</method>
+              <method>DELETE</method>
+            </allowed-methods>
+          </cors>
+          <set-backend-service base-url="${functionAppUrl}" />
+        </inbound>
+        <outbound>
+          <set-header name="X-Response-Time" exists-action="override">
+            <value>@(context.Elapsed.TotalMilliseconds.ToString())</value>
+          </set-header>
+          <jsonp callback-parameter-name="callback" />
+        </outbound>
+        <on-error>
+          <set-status code="500" reason="Internal Server Error" />
+          <set-body>{"error":"Internal server error"}</set-body>
+        </on-error>
+      </policies>
+    '''
+  }
+}
+
+// API definition + version set
+resource apiVersionSet 'Microsoft.ApiManagement/service/apiVersionSets@2023-05-01-preview' = {
+  parent: apim
+  name: 'orders-api-versions'
+  properties: {
+    displayName: 'Orders API'
+    versioningScheme: 'Segment'  // /v1/orders, /v2/orders
+  }
+}
+```
+
+**Policy Ricorrenti**
+
+| Policy | Scenario |
+|---|---|
+| `rate-limit` | Limite per subscription key globale |
+| `rate-limit-by-key` | Limite per client IP / header / claim JWT |
+| `validate-jwt` | Validazione token in ingresso (Entra ID, OAuth) |
+| `set-header` | Aggiunta/override header (CORS, security, tracing) |
+| `set-backend-service` | Routing a backend diverso per operazione |
+| `rewrite-uri` | URL rewrite (es. strip prefix) |
+| `json-to-xml` / `xml-to-json` | Conversione formato per consumer legacy |
+
+**Anti-pattern APIM**
+
+| # | Pattern | Fix |
+|---|---|---|
+| APIM1 | APIM in dev senza motivo | Developer SKU per dev/test costa; Standard parte da ~$400/mese |
+| APIM2 | Senza rate limiting su API pubblica | `rate-limit-by-key` obbligatorio |
+| APIM3 | Subscription key in URL (`?subscription-key=`) | Header `Ocp-Apim-Subscription-Key` |
+| APIM4 | Nessuna policy CORS | Esplicita `allowed-origins`, mai `*` in produzione |
+
+#### Azure Front Door + CDN + WAF
+
+Usa **Azure Front Door** (Premium) *quando*:
+- Utenti distribuiti globalmente (CDN + 192+ PoP edge)
+- Multi-region con failover automatico (health probe, priority-based routing)
+- WAF centralizzato + DDoS protection
+- SSL offloading + certificato gestito
+- URL rewrite / redirect globale
+
+Usa **Front Door (Standard)** se non ti servono WAF + private link.
+
+**Bicep: Front Door + WAF**
+
+```bicep
+// WAF Policy
+resource wafPolicy 'Microsoft.Network/FrontDoorWebApplicationFirewallPolicies@2024-02-01' = {
+  name: 'waf-${projectName}'
+  location: 'Global'
+  sku: { name: 'Premium_AzureFrontDoor' }
+  properties: {
+    policySettings: {
+      enabledState: 'Enabled'
+      mode: 'Prevention'  // Detection = log only; Prevention = block
+      requestBodyCheck: true
+    }
+    managedRules: {
+      managedRuleSets: [
+        {
+          ruleSetType: 'Microsoft_DefaultRuleSet'
+          ruleSetVersion: '2.1'
+          ruleSetAction: 'Block'
+          exclusions: [
+            // Escludi path di health check per evitare falsi positivi
+            {
+              matchVariable: 'RequestUri'
+              selectorMatchOperator: 'Contains'
+              selector: '/health'
+            }
+          ]
+        }
+        {
+          ruleSetType: 'Microsoft_BotManagerRuleSet'
+          ruleSetVersion: '1.0'
+          ruleSetAction: 'Block'
+        }
+      ]
+    }
+    customRules: {
+      rules: [
+        {
+          name: 'RateLimit1000'
+          priority: 1
+          ruleType: 'RateLimitRule'
+          rateLimitDuration: 'OneMin'
+          rateLimitThreshold: 1000
+          action: 'Block'
+          matchConditions: [
+            {
+              matchVariable: 'RemoteAddr'
+              operator: 'IPMatch'
+              matchValue: []
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+
+// Front Door Profile + Endpoint
+resource frontDoor 'Microsoft.Cdn/profiles@2024-02-01' = {
+  name: 'afd-${projectName}'
+  location: 'Global'
+  sku: { name: 'Premium_AzureFrontDoor' }
+}
+
+resource endpoint 'Microsoft.Cdn/profiles/afdEndpoints@2024-02-01' = {
+  parent: frontDoor
+  name: 'afd-endpoint-${projectName}'
+  properties: {
+    enabledState: 'Enabled'
+  }
+}
+
+// Origin groups — multi-region con priorità
+resource originGroup 'Microsoft.Cdn/profiles/originGroups@2024-02-01' = {
+  parent: frontDoor
+  name: 'api-origins'
+  properties: {
+    loadBalancingSettings: {
+      sampleSize: 4
+      successfulSamplesRequired: 3
+      additionalLatencyInMilliseconds: 50
+    }
+    healthProbeSettings: {
+      probePath: '/health/ready'
+      probeIntervalInSeconds: 30
+      probeProtocol: 'Https'
+    }
+  }
+}
+
+// Route: HTTPS only, associata a WAF
+resource route 'Microsoft.Cdn/profiles/afdEndpoints/routes@2024-02-01' = {
+  parent: endpoint
+  name: 'api-route'
+  properties: {
+    enabledState: 'Enabled'
+    httpsRedirect: 'Enabled'
+    supportedProtocols: ['Https']
+    // WAF associata via security policy
+  }
+}
+
+// Security Policy (WAF + endpoint)
+resource securityPolicy 'Microsoft.Cdn/profiles/securityPolicies@2024-02-01' = {
+  parent: frontDoor
+  name: 'waf-policy'
+  properties: {
+    parameters: {
+      type: 'WebApplicationFirewall'
+      wafPolicy: { id: wafPolicy.id }
+      associations: [
+        {
+          domains: [{ id: endpoint.id }]
+          patternsToMatch: ['/*']
+        }
+      ]
+    }
+  }
+}
+```
+
+**Anti-pattern Front Door**
+
+| # | Pattern | Fix |
+|---|---|---|
+| FD1 | Front Door senza WAF in produzione | WAF Policy obbligatorio per endpoint pubblici |
+| FD2 | Mode: Detection in produzione | Prevention; Detection solo per tuning iniziale |
+| FD3 | HTTP permesso su endpoint pubblico | `httpsRedirect: 'Enabled'` + `supportedProtocols: ['Https']` |
+| FD4 | Nessun health probe configurato | `healthProbeSettings` su ogni origin group |
+| FD5 | SKU Standard per WAF | Serve Premium per WAF + Private Link |
+
 ### Trasversali
 
 - **Security**: auth → Managed Identity user-assigned; segreti → Key Vault; RBAC → Microsoft Entra ID.
@@ -171,6 +414,111 @@ Regola: **non** usare Durable Functions per orchestrazioni semplici (< 3 step, n
 - **Key Vault**: RBAC authorization (no access policy legacy); rotation automatica; soft-delete + purge protection in prod.
 - Nessun secret in `appsettings.json`/`local.settings.json`: usa Key Vault references `@Microsoft.KeyVault(...)`. Azure SDK `Azure.*` track 2.
 
+### Azure OpenAI Service
+
+Usa **Azure OpenAI Service** *quando* il progetto richiede integrazione LLM in produzione:
+- Richiede compliance enterprise (data residency, network isolation, content filtering)
+- Serve RBAC + Managed Identity integrato con il resto dell'infrastruttura Azure
+- Serve provisioning via IaC (Bicep)
+
+Usa **OpenAI diretta** per prototyping rapido senza vincoli Azure.
+
+**Setup**
+
+```csharp
+// Program.cs — .NET 10 con Semantic Kernel
+builder.Services.AddAzureOpenAIClient(builder.Configuration["AzureOpenAI:Endpoint"]!,
+    new DefaultAzureCredential());
+
+builder.Services.AddKernel()
+    .AddAzureOpenAIChatCompletion(
+        deploymentName: builder.Configuration["AzureOpenAI:Deployment"]!,
+        azureOpenAIClient: sp => sp.GetRequiredService<AzureOpenAIClient>());
+
+// Chat completions con content safety
+public sealed class AiOrderService(
+    IChatCompletionService chat,
+    ILogger<AiOrderService> logger)
+{
+    public async Task<string> SummarizeOrderAsync(Guid orderId, string details, CancellationToken ct)
+    {
+        var prompt = $"""
+            Summarize the following order in Italian, highlighting:
+            - Total amount
+            - Number of line items
+            - Any special instructions
+
+            Order {orderId}:
+            {details}
+            """;
+
+        var response = await chat.GetChatMessageContentAsync(prompt, cancellationToken: ct);
+        logger.LogInformation("AI summary generato per ordine {OrderId}, token usati: {Tokens}",
+            orderId, response.Metadata?["Usage"]);
+        return response.ToString();
+    }
+}
+```
+
+**Bicep: Azure OpenAI + Content Safety**
+
+```bicep
+resource openAi 'Microsoft.CognitiveServices/accounts@2024-04-01-preview' = {
+  name: 'aoai-${projectName}'
+  location: location
+  kind: 'OpenAI'
+  sku: { name: 'S0' }
+  properties: {
+    customSubDomainName: 'aoai-${projectName}'
+    publicNetworkAccess: 'Disabled'  // Private endpoint only
+    networkAcls: {
+      defaultAction: 'Deny'
+      virtualNetworkRules: [
+        {
+          id: vnetSubnet.id
+          ignoreMissingVNetServiceEndpoint: false
+        }
+      ]
+    }
+  }
+}
+
+// Content filter per deployment
+resource contentFilter 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-04-01-preview' = {
+  parent: openAi
+  name: 'DefaultContentFilter'
+  properties: {
+    contentFilters: [
+      { name: 'hate', severityThreshold: 'Medium', enabled: true }
+      { name: 'sexual', severityThreshold: 'Medium', enabled: true }
+      { name: 'selfharm', severityThreshold: 'Low', enabled: true }
+      { name: 'violence', severityThreshold: 'Medium', enabled: true }
+    ]
+  }
+}
+
+// RBAC: Developer → Azure OpenAI User (no API key)
+resource openAiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(openAi.id, developerPrincipalId, 'Cognitive Services OpenAI User')
+  scope: openAi
+  properties: {
+    principalId: developerPrincipalId
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
+  }
+}
+```
+
+**Anti-pattern Azure OpenAI**
+
+| # | Pattern | Fix |
+|---|---|---|
+| AOAI1 | API key hardcoded o in appsettings | `DefaultAzureCredential` + RBAC "Cognitive Services OpenAI User" |
+| AOAI2 | Nessun content filter configurato | Content filter obbligatorio; minimum: hate/sexual/violence |
+| AOAI3 | Public endpoint senza WAF in produzione | `publicNetworkAccess: 'Disabled'` + Private Endpoint |
+| AOAI4 | Prompt injection non gestita | Validazione input + content filter + rate limiting |
+| AOAI5 | Retry illimitato su throttling | Polly con exponential backoff + jitter |
+| AOAI6 | Logging senza mascheramento dati sensibili | PII detection prima del logging |
+
 ### Bicep (vincoli consolidati)
 
 | Vincolo | Regola |
@@ -194,6 +542,39 @@ Applica come filtro, non come checklist. Tra parentesi il trigger.
 - **Reliability**: retry (host.json, Polly); DLQ su ogni consumer; circuit breaker *quando* chiami servizi esterni inaffidabili; deployment slot (staging→prod swap) *quando* serve zero-downtime; fallback/degradazione *quando* esiste un percorso degradato accettabile.
 - **Performance**: CosmosClient/ServiceBusClient singleton; query Cosmos DB con partition key (mai cross-partition in prod → AZ3); partition key ad alta cardinalità; cache (Redis) *quando* hot-read ripetute dominano; Functions always-ready *quando* cold start viola SLO di latenza (→ AZ9).
 - **Cost**: Consumption Plan di default (pay-per-execution); Premium Plan/always-ready solo dietro SLO di latenza; Cosmos DB serverless/autoscale; Log Analytics retention 30gg dev/90gg prod; budget alert all'80%/100%.
+
+### Backup & Disaster Recovery
+
+**Strategie per servizio**
+
+| Servizio | Backup | Recovery |
+|---|---|---|
+| **Cosmos DB** | Continuous backup (7-30gg, configurabile) | Point-in-time restore via `Restore-AzCosmosDBAccount` |
+| **Azure SQL** | Automatico 7-35gg, long-term retention (LTR) fino a 10 anni | Geo-restore o restore point-in-time |
+| **Functions** | Codice in source control (Git); config in Key Vault | Redeploy da CI/CD + restore config |
+| **Blob Storage** | Soft delete + versioning + immutability | Restore blob version o punto nel tempo |
+| **Key Vault** | Soft delete + purge protection (obbligatorio in prod) | Recovery oggetti pre-delete |
+
+```bicep
+// Cosmos DB continuous backup
+resource cosmosDb 'Microsoft.DocumentDB/databaseAccounts@2024-02-15-preview' = {
+  properties: {
+    backupPolicy: {
+      type: 'Continuous'
+      continuousModeProperties: { tier: 'Continuous30Days' } // o Continuous7Days
+    }
+  }
+}
+
+// Key Vault soft delete + purge protection
+resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
+  properties: {
+    enableSoftDelete: true
+    enablePurgeProtection: true  // Obbligatorio in prod: impedisce eliminazione forzata
+    softDeleteRetentionInDays: 90
+  }
+}
+```
 
 ---
 
@@ -261,6 +642,12 @@ In aggiunta agli anti-pattern di Vulcan-Core:
 | AZ12 | Logic Apps per orchestrazione semplice di codice | Functions + `await` sequenziali è più leggero |
 | AZ13 | Container Apps senza traffic splitting per deploy | Blue-green/canary riduce il rischio di deploy |
 | AZ14 | Durable Functions per pipeline lineare < 3 step | codice sequenziale + `await` è più semplice |
+| AZ15 | API pubblica senza APIM in produzione | APIM Standard + rate limit + CORS + subscription key |
+| AZ16 | API pubblica senza WAF | Front Door Premium + WAF Policy |
+| AZ17 | Azure OpenAI senza content filter | Content filter con threshold minimum (hate, sexual, violence, self-harm) |
+| AZ18 | Cosmos DB senza continuous backup in produzione | `Continuous30Days` obbligatorio |
+| AZ19 | Key Vault senza purge protection in produzione | `enablePurgeProtection: true` |
+| AZ20 | Azure OpenAI con API key in appsettings | Managed Identity + RBAC "Cognitive Services OpenAI User" |
 
 ---
 
@@ -375,6 +762,12 @@ Sostituire un pacchetto legacy chiude **sia** l'asse "deprecati" **sia** l'anti-
 | RC-Z7 | "usa Premium Plan" per carico batch sporadico | Segnala AZ9, propone Consumption salvo SLO di latenza esplicito |
 | RC-Z8 | dipendenza `WindowsAzure.Storage` / `Microsoft.Azure.ServiceBus` | Segnala deprecato (AZ10), sostituisce con `Azure.Storage.Blobs` / `Azure.Messaging.ServiceBus` |
 | RC-Z9 | Functions su `net8.0` con outdated | Migra a `net10.0` isolated (allinea Worker + Worker.Sdk), poi azzera outdated |
+| RC-Z10 | "espone API pubblica senza APIM" | Segnala AZ15, propone APIM Standard + rate limit + CORS + subscription key |
+| RC-Z11 | "espone API pubblica senza WAF" | Segnala AZ16, propone Front Door Premium + WAF Policy |
+| RC-Z12 | "crea Azure OpenAI senza content filter" | Segnala AZ17, configura content filter minimo (hate, sexual, violence, self-harm) |
+| RC-Z13 | "crea Cosmos DB in prod senza backup" | Segnala AZ18, imposta continuous backup `Continuous30Days` |
+| RC-Z14 | "crea Key Vault senza purge protection" | Segnala AZ19, imposta `enablePurgeProtection: true` |
+| RC-Z15 | "usa Azure OpenAI con API key in appsettings" | Segnala AZ20, usa Managed Identity + RBAC "Cognitive Services OpenAI User" |
 
 ---
 

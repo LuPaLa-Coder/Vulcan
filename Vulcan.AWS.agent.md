@@ -85,6 +85,116 @@ Tabella di default + trigger per deviare. Non promuovere il servizio "più poten
 
 **DynamoDB TTL + Streams**: usa TTL (`ttlAttributeName`) per expiry automatico di record temporanei (sessioni, eventi, flag). Combina con **DynamoDB Streams** per catturare l'evento di cancellazione e triggerare una Lambda (es. cleanup cascade, notifica, audit). Costo trascurabile rispetto a scan periodici. Attento: TTL non garantisce cancellazione immediata — finestra di 48h max per l'eliminazione effettiva.
 
+#### S3 Object Lambda
+
+##### Quando
+
+Usa **S3 Object Lambda** *quando* devi trasformare dati S3 al volo per consumer diversi senza duplicare gli oggetti:
+- Redazione PII/PHI da report esportati
+- Conversione formato immagine (es. PNG→WebP) per client diversi
+- Arricchimento con dati esterni (es. watermark)
+- Filtro/trascodifica XML→JSON per consumer legacy vs moderni
+
+**Non usare** per semplici reindirizzamenti o cache statiche — bastano CloudFront + Lambda@Edge.
+
+##### Pattern
+
+```csharp
+// Lambda che aggiunge watermark a un'immagine S3
+public sealed class WatermarkFunction
+{
+    public async Task<Stream> FunctionHandler(
+        S3ObjectLambdaEvent request,
+        ILambdaContext context)
+    {
+        var s3Client = new AmazonS3Client();
+        var getObjectRequest = new GetObjectRequest
+        {
+            BucketName = request.InputS3Uri.Bucket,
+            Key = request.InputS3Uri.Key
+        };
+
+        using var original = await s3Client.GetObjectAsync(getObjectRequest);
+        using var watermarked = await ApplyWatermark(original.ResponseStream, "CONFIDENTIAL");
+        return watermarked;
+    }
+}
+```
+
+##### CDK
+
+```csharp
+var objectLambda = new CfnAccessPoint(this, "WatermarkAccessPoint", new CfnAccessPointProps
+{
+    Bucket = bucket.BucketName,
+    Name = "watermark-access-point"
+});
+
+var lambdaAp = new CfnAccessPoint(this, "LambdaAccessPoint", new CfnAccessPointProps
+{
+    Bucket = bucket.BucketName,
+    Name = "lambda-watermark-access-point"
+});
+
+var config = new CfnObjectLambdaConfiguration(this, "WatermarkConfig", new CfnObjectLambdaConfigurationProps
+{
+    SupportingAccessPoint = lambdaAp.AttrArn,
+    TransformationConfigurations = new[]
+    {
+        new CfnObjectLambdaConfiguration.TransformationConfigurationProperty
+        {
+            Actions = new[] { "GetObject" },
+            ContentTransformation = new Dictionary<string, object>
+            {
+                ["AwsLambda"] = new Dictionary<string, string>
+                {
+                    ["FunctionArn"] = watermarkFunction.FunctionArn
+                }
+            }
+        }
+    }
+});
+```
+
+#### S3 Intelligent-Tiering
+
+##### Quando
+
+| Segnale | Azione |
+|---|---|
+| Dati con access pattern imprevedibile | **Intelligent-Tiering** — risparmio automatico |
+| Dati con access pattern noto e stabile | Lifecycle rule manuale (più economico) |
+| Dati ad accesso frequentissimo | Standard (nessun tiering) |
+
+```csharp
+// CDK — default con Intelligent-Tiering
+new Bucket(this, "DataBucket", new BucketProps
+{
+    IntelligentTieringConfigurations = new[]
+    {
+        new IntelligentTieringConfiguration
+        {
+            Name = "auto-tier",
+            TieringRules = new[]
+            {
+                new TieringRule
+                {
+                    AccessTier = AccessTier.ARCHIVE_ACCESS,
+                    Status = TieringStatus.ENABLED,
+                    Days = 90
+                },
+                new TieringRule
+                {
+                    AccessTier = AccessTier.DEEP_ARCHIVE_ACCESS,
+                    Status = TieringStatus.ENABLED,
+                    Days = 180
+                }
+            }
+        }
+    }
+});
+```
+
 ### Messaging
 
 | Scegli | QUANDO |
@@ -130,6 +240,136 @@ Regola pratica: **Secrets Manager** per tutto ciò che cambia frequentemente o r
 | **CloudFront Functions** | manipolazione richiesta/risposta sub-ms (header rewrite, redirect, cache key). 1ms, 2MB, JavaScript only. Preferisci a Lambda@Edge per operazioni semplici |
 
 Usa **CloudFront** davanti a API Gateway *quando*: utenti distribuiti globalmente (riduci latenza con edge caching), serve WAF integrato + georestriction, HTTPS con certificato ACM personalizzato.
+
+#### WAF v2 + Web ACL
+
+##### Quando
+
+Usa **AWS WAF v2** + Web ACL *quando* l'API Gateway/CloudFront/ALB è esposta a internet in produzione. In dev/staging è overhead non necessario (costo fisso ~$8/mese/ACL + richieste).
+
+##### CDK Stack
+
+```csharp
+// WAF v2 Web ACL con AWS Managed Rules + Rate Limiting
+var wafAcl = new CfnWebACL(this, "ApiWaf", new CfnWebACLProps
+{
+    DefaultAction = new CfnWebACL.DefaultActionProperty
+    {
+        Allow = new CfnWebACL.AllowActionProperty()
+    },
+    Scope = "REGIONAL", // REGIONAL per ALB/API Gateway; CLOUDFRONT per CloudFront
+    VisibilityConfig = new CfnWebACL.VisibilityConfigProperty
+    {
+        CloudWatchMetricsEnabled = true,
+        MetricName = "ApiWaf",
+        SampledRequestsEnabled = true
+    },
+    Rules = new[]
+    {
+        // 1. AWS Managed Rules — Core Rule Set (SQLi, XSS, path traversal, etc.)
+        new CfnWebACL.RuleProperty
+        {
+            Name = "ManagedCommon",
+            Priority = 1,
+            OverrideAction = new CfnWebACL.OverrideActionProperty { None = new Dictionary<string, object> {} },
+            Statement = new CfnWebACL.StatementProperty
+            {
+                ManagedRuleGroupStatement = new CfnWebACL.ManagedRuleGroupStatementProperty
+                {
+                    VendorName = "AWS",
+                    Name = "AWSManagedRulesCommonRuleSet",
+                    // Escludi regole che causano falsi positivi nel tuo contesto
+                    ExcludedRules = new[]
+                    {
+                        new CfnWebACL.ExcludedRuleProperty { Name = "SizeRestrictions_BODY" }
+                    }
+                }
+            },
+            VisibilityConfig = new CfnWebACL.VisibilityConfigProperty
+            {
+                SampledRequestsEnabled = true,
+                CloudWatchMetricsEnabled = true,
+                MetricName = "ManagedCommon"
+            }
+        },
+        // 2. Rate limit per IP
+        new CfnWebACL.RuleProperty
+        {
+            Name = "RateLimit1000Per5Min",
+            Priority = 2,
+            Action = new CfnWebACL.RuleActionProperty { Block = new Dictionary<string, object> {} },
+            Statement = new CfnWebACL.StatementProperty
+            {
+                RateBasedStatement = new CfnWebACL.RateBasedStatementProperty
+                {
+                    Limit = 1000,
+                    AggregateKeyType = "IP",
+                    EvaluationWindowSec = 300
+                }
+            },
+            VisibilityConfig = new CfnWebACL.VisibilityConfigProperty
+            {
+                SampledRequestsEnabled = true,
+                CloudWatchMetricsEnabled = true,
+                MetricName = "RateLimit1000Per5Min"
+            }
+        },
+        // 3. Blocco geografico (opzionale — solo se richiesto)
+        new CfnWebACL.RuleProperty
+        {
+            Name = "GeoBlockHighRisk",
+            Priority = 3,
+            Action = new CfnWebACL.RuleActionProperty { Block = new Dictionary<string, object> {} },
+            Statement = new CfnWebACL.StatementProperty
+            {
+                GeoMatchStatement = new CfnWebACL.GeoMatchStatementProperty
+                {
+                    CountryCodes = new[] { "KP", "IR", "SY" } // Paesi sotto sanzione
+                }
+            },
+            VisibilityConfig = new CfnWebACL.VisibilityConfigProperty
+            {
+                SampledRequestsEnabled = true,
+                CloudWatchMetricsEnabled = true,
+                MetricName = "GeoBlockHighRisk"
+            }
+        }
+    }
+});
+
+// Associa WAF all'API Gateway (Regional)
+var apiGatewayArn = $"arn:aws:apigateway:{Region}::/restapis/{restApi.RestApiId}/stages/{stageName}";
+var association = new CfnWebACLAssociation(this, "WafApiAssociation", new CfnWebACLAssociationProps
+{
+    ResourceArn = apiGatewayArn,
+    WebAclArn = wafAcl.AttrArn
+});
+```
+
+##### WAF Logging
+
+```csharp
+// Log delle richieste bloccate/permesse in CloudWatch + S3 (compliance/forensic)
+var wafLogGroup = new LogGroup(this, "WafLogs", new LogGroupProps
+{
+    Retention = RetentionDays.THREE_MONTHS
+});
+
+new CfnLoggingConfiguration(this, "WafLogging", new CfnLoggingConfigurationProps
+{
+    ResourceArn = wafAcl.AttrArn,
+    LogDestinationConfigs = new[] { wafLogGroup.LogGroupArn }
+});
+```
+
+##### Anti-pattern WAF
+
+| # | Pattern | Fix |
+|---|---|---|
+| WAF1 | WAF in dev/staging senza motivo | Solo produzione; costo fisso per ACL |
+| WAF2 | WAF senza CloudWatch metric/logging | Abilita `CloudWatchMetricsEnabled` e logging |
+| WAF3 | Rate limit senza `EvaluationWindowSec` | Esplicita la finestra (300 = 5 minuti) |
+| WAF4 | Managed Rules senza `ExcludedRules` | Tuning per evitare falsi positivi bloccanti |
 
 ---
 
@@ -178,6 +418,44 @@ Applica come filtro, non come checklist da spuntare. Tra parentesi il trigger.
 - **Performance**: client SDK fuori dall'handler; query DynamoDB (mai scan in prod → AWS3), GSI per pattern secondari; sizing memoria Lambda con Power Tuning *quando* la latenza/costo conta; cache (ElastiCache/DAX) *quando* hot-read ripetute dominano.
 - **Cost**: pay-per-use di default (Lambda, DynamoDB on-demand); commit a capacità riservata solo a volume costante dimostrato; lifecycle S3 e log retention come sopra; budget alert all'80%/100%.
 
+#### CloudWatch Logs Insights — Query Pronte
+
+Query predefinite da usare in console CloudWatch → Logs Insights o via CLI:
+
+##### Lambda
+
+| Scenario | Query |
+|---|---|
+| Errori per funzione | `filter @level = "Error" \| stats count(*) by functionName` |
+| Cold start count | `filter @message like /Init Duration/ \| stats count(*) as coldStarts by functionName` |
+| Durata media per funzione | `filter @type = "REPORT" \| stats avg(@duration) as avgMs, max(@duration) as maxMs by functionName` |
+| Memoria usata vs allocata | `filter @type = "REPORT" \| stats avg(@maxMemoryUsed) / 1048576 as avgMB, avg(@memorySize) as allocMB by functionName` |
+| Timeout count | `filter @type = "REPORT" and @duration >= @memorySize * 1000 \| stats count(*) by functionName` |
+
+##### API Gateway
+
+| Scenario | Query |
+|---|---|
+| Top 10 endpoint per latenza | `filter @message like /Method request/ \| parse @message "HTTP Method: *, Resource Path: *" as httpMethod, path \| stats avg(@duration) as avgMs by httpMethod, path \| sort avgMs desc \| limit 10` |
+| Errori 5xx per endpoint | `filter @status >= 500 \| stats count(*) as errorCount by @status, httpMethod, path \| sort errorCount desc` |
+| 4xx per client IP | `filter @status >= 400 and @status < 500 \| stats count(*) by httpMethod, path, @status` |
+
+##### DynamoDB
+
+| Scenario | Query |
+|---|---|
+| Scan count (anti-pattern) | `filter @message like /Scan/ \| stats count(*) by tableName` |
+| Errori throttling | `filter @message like /ProvisionedThroughputExceeded/ \| stats count(*) by tableName` |
+| ItemCollectionMetrics (hot partition) | `filter @message like /ItemCollectionMetrics/ \| stats max(ItemCollectionSizeMax) by tableName` |
+
+##### Performance Investigation
+
+| Scenario | Query |
+|---|---|
+| Trova richieste più lente (ultimi 30 min) | `filter @type = "REPORT" \| sort @duration desc \| limit 20 \| display @timestamp, @requestId, @duration, @billedDuration` |
+| Memory pressure | `filter @type = "REPORT" \| stats avg(@maxMemoryUsed) / avg(@memorySize) * 100 as memoryUtilPct by functionName \| filter memoryUtilPct > 80` |
+| Init duration trend | `filter @type = "REPORT" and @initDuration > 0 \| stats avg(@initDuration) as avgInitMs, max(@initDuration) as maxInitMs, count(*) as samples by bin(1h)` |
+
 ---
 
 ## Output Specifico AWS
@@ -212,6 +490,10 @@ Oltre agli anti-pattern standard di Vulcan-Core, segnala e correggi:
 | AWS12 | Secrets Manager per segreti statici senza rotation | Parameter Store SecureString ($0.05/param) |
 | AWS13 | CloudFront mancante dietro API Gateway globale | CloudFront + WAF riduce latenza e protegge |
 | AWS14 | Scan periodico per expiry di record temporanei | DynamoDB TTL + Streams è più economico |
+| AWS15 | Nessun WAF su API Gateway pubblico in produzione | WAF v2 + AWS Managed Rules + Rate Limiting |
+| AWS16 | WAF senza logging abilitato | `CloudWatchMetricsEnabled=true` + `LogDestinationConfigs` |
+| AWS17 | Rate limit senza finestra di valutazione | `EvaluationWindowSec=300` (5 min) |
+| AWS18 | Managed Rules applicate senza tuning | `ExcludedRules` per falsi positivi noti |
 
 ---
 
@@ -324,6 +606,10 @@ await localstack.StartAsync();
 | RC-A6 | "analizza il codice" senza file | Profilo read-only; nessuna scrittura/build/deploy |
 | RC-A7 | Lambda su `net8.0` con outdated | Migra a `net10.0` (runtime gestito o container/`provided.al2023`), poi azzera outdated |
 | RC-A8 | dipendenza `Amazon.CDK` (v1) o `AWSSDK` monolitico | Segnala deprecato (AWS9/AWS10), propone CDK v2 / SDK v3 modulare |
+| RC-A9 | API Gateway/ALB pubblico in prod senza WAF | Aggiunge WAF v2 + AWS Managed Rules + Rate Limiting (→ AWS15) |
+| RC-A10 | WAF configurato senza logging | Abilita `CloudWatchMetricsEnabled` + `LogDestinationConfigs` (→ AWS16) |
+| RC-A11 | Rate limit senza finestra di valutazione | Imposta `EvaluationWindowSec=300` (→ AWS17) |
+| RC-A12 | Managed Rules senza `ExcludedRules` | Tuning con `ExcludedRules` per falsi positivi noti (→ AWS18) |
 
 ---
 
