@@ -29,11 +29,12 @@ CYAN='\033[0;36m'  BOLD='\033[1m'      NC='\033[0m'
 VULCAN_VERSION="3.1.0"
 REPO_URL="https://raw.githubusercontent.com/LuPaLa-Coder/Vulcan/main"
 
-# Tre agenti Vulcan — Core (Generic), AWS, Azure
+# Quattro agenti Vulcan — Core (Generic), AWS, Azure, SCA
 AGENT_FILES=(
     "Vulcan.Core.agent.md"
     "Vulcan.AWS.agent.md"
     "Vulcan.Azure.agent.md"
+    "Vulcan.SCA.agent.md"
 )
 
 # Agente legacy (v1/v2) da rimuovere in upgrade
@@ -51,6 +52,9 @@ get_agent_description() {
         "Vulcan.Azure.agent.md")
             echo 'Vulcan-Azure C# Agent — sviluppo cloud-native su Azure con .NET 10 LTS: Functions, Cosmos DB, Service Bus, Container Apps, Key Vault, Bicep. Usare per GENERARE codice C# con target Azure. Per codice provider-agnostic usare Vulcan-Core, per AWS usare Vulcan-AWS.'
             ;;
+        "Vulcan.SCA.agent.md")
+            echo 'Vulcan-SCA — Software Composition Analysis Agent per ecosistema .NET: analisi automatica pacchetti NuGet (vulnerabilità, deprecazione, obsolescenza), remediation loop con delega a Vulcan-Core, verifica iterativa fino a 0 vulnerabili · 0 deprecati · 0 outdated. Usare per SCANSIONE e REMEDIATION automatica delle dipendenze NuGet. Per generazione codice usare Vulcan-Core, per code review usare Anubis.'
+            ;;
     esac
 }
 
@@ -58,15 +62,15 @@ get_agent_description() {
 # che OpenCode/Copilot/Cursor li interpretino come agent separati
 TEMPLATE_DIR="vulcan-templates"
 TEMPLATE_FILES=(
-    "vulcan-aws-templates.md"
-    "vulcan-azure-templates.md"
+    
 )
 
 # Cache per i corpi degli agenti (scaricati/letti una volta sola)
-# Tre variabili invece di array associativo per compatibilità POSIX
+# Quattro variabili invece di array associativo per compatibilità POSIX
 _BODY_CORE=""
 _BODY_AWS=""
 _BODY_AZURE=""
+_BODY_SCA=""
 
 # Mappa il nome file agente al nome della variabile cache
 get_body_varname() {
@@ -74,6 +78,7 @@ get_body_varname() {
         "Vulcan.Core.agent.md") echo "_BODY_CORE" ;;
         "Vulcan.AWS.agent.md")  echo "_BODY_AWS" ;;
         "Vulcan.Azure.agent.md") echo "_BODY_AZURE" ;;
+        "Vulcan.SCA.agent.md") echo "_BODY_SCA" ;;
     esac
 }
 
@@ -82,7 +87,7 @@ print_banner() {
     echo -e "${CYAN}${BOLD}"
     echo "  ⚡ Vulcan C# Agent — Global Installer v${VULCAN_VERSION}"
     echo -e "${NC}"
-    echo "  C# .NET 10 LTS · Vulcan-Core · Vulcan-AWS · Vulcan-Azure"
+    echo "  C# .NET 10 LTS · Vulcan-Core · Vulcan-AWS · Vulcan-Azure · Vulcan-SCA"
     echo "  Cloud-Native Development Agents"
     echo ""
 }
@@ -236,12 +241,13 @@ EOF
 }
 
 # Estrae il nome breve dell'agente dal filename
-# Vulcan.Core.agent.md → Core, Vulcan.AWS.agent.md → AWS, Vulcan.Azure.agent.md → Azure
+# Vulcan.Core.agent.md → Core, Vulcan.AWS.agent.md → AWS, Vulcan.Azure.agent.md → Azure, Vulcan.SCA.agent.md → SCA
 get_agent_short_name() {
     local agent_file="$1"
     if [[ "$agent_file" == *".Core."* ]]; then echo "Core"
     elif [[ "$agent_file" == *".AWS."* ]]; then echo "AWS"
     elif [[ "$agent_file" == *".Azure."* ]]; then echo "Azure"
+    elif [[ "$agent_file" == *".SCA."* ]]; then echo "SCA"
     else echo ""
     fi
 }
@@ -464,7 +470,7 @@ install_local() {
 
     mkdir -p "$dest_dir"
 
-    # Installa tutti e tre gli agenti localmente con frontmatter Claude
+    # Installa tutti e quattro gli agenti localmente con frontmatter Claude
     local installed=0
     for agent_file in "${AGENT_FILES[@]}"; do
         local dest="${dest_dir}/${agent_file}"
@@ -490,7 +496,7 @@ install_local() {
     # Template
     copy_templates "$dest_dir"
 
-    # Crea settings.json Claude Code con tutti e tre gli agenti
+    # Crea settings.json Claude Code con tutti e quattro gli agenti
     local settings="${local_dir}/.claude/settings.json"
     if [[ ! -f "$settings" ]]; then
         cat > "$settings" <<'SETTINGS'
@@ -507,6 +513,10 @@ install_local() {
     "Vulcan-Azure": {
       "description": "Vulcan-Azure C# Agent — sviluppo cloud-native Azure",
       "path": ".claude/agents/Vulcan.Azure.agent.md"
+    },
+    "Vulcan-SCA": {
+      "description": "Vulcan-SCA — analisi e remediation NuGet dependencies",
+      "path": ".claude/agents/Vulcan.SCA.agent.md"
     }
   }
 }

@@ -1,27 +1,28 @@
 # Vulcan C# Agent Family
 
-**Modern C# Development — Three Specialized Agents for Every Cloud Target**
+**Modern C# Development — Four Specialized Agents for Every Target**
 
-Vulcan è una famiglia di tre agenti specializzati per lo sviluppo C# e .NET 10 LTS, ciascuno ottimizzato per un target specifico:
+Vulcan è una famiglia di quattro agenti specializzati per lo sviluppo C# e .NET 10 LTS, ciascuno ottimizzato per un target specifico:
 
 | Agente | Target | File |
 |---|---|---|
 | **Vulcan-Core** | Provider-agnostic: API REST, Minimal API, gRPC, console, librerie, worker + API versioning, OpenAPI | `Vulcan.Core.agent.md` |
 | **Vulcan-AWS** | AWS cloud-native: Lambda, DynamoDB, SQS, SNS, S3, ECS, CDK + EventBridge Pipes, CloudFront, API GW v2, LocalStack, cdk-nag | `Vulcan.AWS.agent.md` |
 | **Vulcan-Azure** | Azure cloud-native: Functions, Cosmos DB, Service Bus, Container Apps, Bicep + Durable Functions catalog, Logic Apps, blue-green, Azurite, PSRule | `Vulcan.Azure.agent.md` |
+| **Vulcan-SCA** | Software Composition Analysis per NuGet: vulnerabilità, deprecazioni e outdated package con remediation loop | `Vulcan.SCA.agent.md` |
 
 **Unico formato: Agent** — installabile globalmente su tutti i coding agent (Claude Code, OpenCode, GitHub Copilot, Cursor, Windsurf, Codex).
 
 ---
 
-## Perché Tre Agenti?
+## Perché Quattro Agenti?
 
 Dopo l'analisi del manifesto Vulcan v2 (47KB), abbiamo identificato che un prompt monolitico causa:
 - **Context window saturation**: le istruzioni in fondo vengono dimenticate
 - **Applicazione inconsistente**: regole generiche e cloud-specifiche competono
 - **Token sprecati**: il modello processa regole AWS anche quando lavori su Azure
 
-La soluzione: **tre agenti specializzati, invocati on-demand**. Ogni agente è un motore decisionale auto-sufficiente per il suo target: Core 20KB, AWS/Azure 12KB ciascuno (vs 47KB del manifesto monolitico v2).
+La soluzione: **quattro agenti specializzati, invocati on-demand**. Ogni agente è un motore decisionale auto-sufficiente per il suo target: Core 20KB, AWS/Azure 12KB ciascuno, SCA dedicato alla sicurezza delle dipendenze (vs 47KB del manifesto monolitico v2).
 
 ---
 
@@ -50,7 +51,7 @@ La soluzione: **tre agenti specializzati, invocati on-demand**. Ogni agente è u
 curl -fsSL https://raw.githubusercontent.com/LuPaLa-Coder/Vulcan/main/install.sh | bash
 ```
 
-Lo script installa **tutti e tre gli agenti** (Vulcan-Core, Vulcan-AWS, Vulcan-Azure) in ogni coding agent rilevato.
+Lo script installa **tutti e quattro gli agenti** (Vulcan-Core, Vulcan-AWS, Vulcan-Azure, Vulcan-SCA) in ogni coding agent rilevato.
 
 ### Opzioni di Installazione
 
@@ -98,9 +99,10 @@ Copia i file agent nella directory del tuo tool:
 cp Vulcan.Core.agent.md ~/.claude/agents/
 cp Vulcan.AWS.agent.md ~/.claude/agents/
 cp Vulcan.Azure.agent.md ~/.claude/agents/
+cp Vulcan.SCA.agent.md ~/.claude/agents/
 ```
 
-Dopo l'installazione, **Vulcan-Core**, **Vulcan-AWS** e **Vulcan-Azure** appaiono nel menu agenti del tuo coding tool.
+Dopo l'installazione, **Vulcan-Core**, **Vulcan-AWS**, **Vulcan-Azure** e **Vulcan-SCA** appaiono nel menu agenti del tuo coding tool.
 
 Per la guida completa, vedi **[Installation Guide](./docs/installation.md)** .
 
@@ -112,6 +114,7 @@ Per la guida completa, vedi **[Installation Guide](./docs/installation.md)** .
    - **Vulcan-Core** per API generiche, console app, librerie
    - **Vulcan-AWS** per Lambda, DynamoDB, SQS, CDK
    - **Vulcan-Azure** per Functions, Cosmos DB, Service Bus, Bicep
+   - **Vulcan-SCA** per analizzare e correggere vulnerabilità/deprecazioni/outdated di package NuGet
 
 2. Descrivi cosa vuoi costruire:
 
@@ -140,6 +143,7 @@ Vulcan/
 ├── Vulcan.Core.agent.md          # Agente Generic/.NET (provider-agnostic)
 ├── Vulcan.AWS.agent.md           # Agente AWS cloud-native
 ├── Vulcan.Azure.agent.md         # Agente Azure cloud-native
+├── Vulcan.SCA.agent.md           # Agente SCA per NuGet dependency analysis/remediation
 ├── install.sh                    # Script di installazione globale (v3.1)
 ├── README.md
 └── docs/
@@ -173,6 +177,7 @@ Vulcan/
 | Console app, libreria, API generica, gRPC service | **Vulcan-Core** |
 | Lambda, DynamoDB, S3, SQS, SNS, ECS, CDK, API Gateway, CloudFront, EventBridge Pipes | **Vulcan-AWS** |
 | Functions, Cosmos DB, Service Bus, Container Apps, Bicep, Durable Functions, Logic Apps | **Vulcan-Azure** |
+| Dipendenze NuGet da scansionare/remediate: vulnerabilità, deprecazioni, outdated package | **Vulcan-SCA** |
 | Progetto multi-cloud o ibrido | Inizia con **Vulcan-Core**, poi consulta AWS/Azure per le sezioni cloud |
 
 ---
@@ -215,6 +220,7 @@ Ogni agente Vulcan genera:
 - **[Vulcan-Core Agent](./Vulcan.Core.agent.md)** — Motore decisionale Generic/.NET (20KB)
 - **[Vulcan-AWS Agent](./Vulcan.AWS.agent.md)** — Motore decisionale AWS (12KB)
 - **[Vulcan-Azure Agent](./Vulcan.Azure.agent.md)** — Motore decisionale Azure (12KB)
+- **[Vulcan-SCA Agent](./Vulcan.SCA.agent.md)** — Motore decisionale SCA per dipendenze NuGet (16KB)
 
 ---
 

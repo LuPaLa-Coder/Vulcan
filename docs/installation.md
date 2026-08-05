@@ -2,7 +2,7 @@
 
 ## One-Liner Global Install (Recommended)
 
-Installa tutti e tre gli agenti Vulcan (Core, AWS, Azure) automaticamente su ogni coding agent rilevato:
+Installa tutti e quattro gli agenti Vulcan (Core, AWS, Azure, SCA) automaticamente su ogni coding agent rilevato:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/LuPaLa-Coder/Vulcan/main/install.sh | bash
@@ -10,7 +10,7 @@ curl -fsSL https://raw.githubusercontent.com/LuPaLa-Coder/Vulcan/main/install.sh
 
 Lo script:
 1. Rileva automaticamente quali coding agent hai installato
-2. Copia `Vulcan.Core.agent.md`, `Vulcan.AWS.agent.md`, `Vulcan.Azure.agent.md` nella directory agent corretta
+2. Copia `Vulcan.Core.agent.md`, `Vulcan.AWS.agent.md`, `Vulcan.Azure.agent.md`, `Vulcan.SCA.agent.md` nella directory agent corretta
 3. Copia i template AWS e Azure nella subdirectory `vulcan-templates/`
 4. Rimuove automaticamente l'agente legacy `Vulcan.agent.md` (v1/v2) se presente
 5. Crea un backup se usi l'opzione `--backup`
@@ -69,19 +69,22 @@ Copia i tre file agent nella directory del tuo coding tool:
 cp Vulcan.Core.agent.md ~/.claude/agents/
 cp Vulcan.AWS.agent.md ~/.claude/agents/
 cp Vulcan.Azure.agent.md ~/.claude/agents/
+cp Vulcan.SCA.agent.md ~/.claude/agents/
 
 # Linux/macOS — GitHub Copilot
 cp Vulcan.Core.agent.md ~/.copilot/agents/
 cp Vulcan.AWS.agent.md ~/.copilot/agents/
 cp Vulcan.Azure.agent.md ~/.copilot/agents/
+cp Vulcan.SCA.agent.md ~/.copilot/agents/
 
 # Windows — Claude Code
 copy Vulcan.Core.agent.md %USERPROFILE%\.claude\agents\
 copy Vulcan.AWS.agent.md %USERPROFILE%\.claude\agents\
 copy Vulcan.Azure.agent.md %USERPROFILE%\.claude\agents\
+copy Vulcan.SCA.agent.md %USERPROFILE%\.claude\agents\
 ```
 
-Dopo l'installazione, **Vulcan-Core**, **Vulcan-AWS** e **Vulcan-Azure** appaiono nel dropdown/menu degli agenti del tuo coding tool.
+Dopo l'installazione, **Vulcan-Core**, **Vulcan-AWS**, **Vulcan-Azure** e **Vulcan-SCA** appaiono nel dropdown/menu degli agenti del tuo coding tool.
 
 ### Copia Template (opzionale ma consigliato)
 
@@ -131,11 +134,13 @@ Verifica che gli agenti Vulcan siano installati:
 ls -la ~/.claude/agents/Vulcan.Core.agent.md
 ls -la ~/.claude/agents/Vulcan.AWS.agent.md
 ls -la ~/.claude/agents/Vulcan.Azure.agent.md
+ls -la ~/.claude/agents/Vulcan.SCA.agent.md
 
 # GitHub Copilot
 ls -la ~/.copilot/agents/Vulcan.Core.agent.md
 ls -la ~/.copilot/agents/Vulcan.AWS.agent.md
 ls -la ~/.copilot/agents/Vulcan.Azure.agent.md
+ls -la ~/.copilot/agents/Vulcan.SCA.agent.md
 ```
 
 Poi apri il tuo coding tool e seleziona l'agente Vulcan appropriato dal menu.
@@ -164,13 +169,14 @@ Poi apri il tuo coding tool e seleziona l'agente Vulcan appropriato dal menu.
 
 - Verifica che i file siano nella directory corretta
 - Riavvia il coding tool
-- Controlla che i nomi file siano esattamente `Vulcan.Core.agent.md`, `Vulcan.AWS.agent.md`, `Vulcan.Azure.agent.md`
+- Controlla che i nomi file siano esattamente `Vulcan.Core.agent.md`, `Vulcan.AWS.agent.md`, `Vulcan.Azure.agent.md`, `Vulcan.SCA.agent.md`
 
 ### "Quale agente Vulcan devo usare?"
 
 - **Vulcan-Core**: API generiche, console app, librerie, gRPC — nessun cloud specifico
 - **Vulcan-AWS**: Lambda, DynamoDB, S3, SQS, SNS, ECS, CDK
 - **Vulcan-Azure**: Functions, Cosmos DB, Service Bus, Container Apps, Bicep
+- **Vulcan-SCA**: vulnerabilità, deprecazioni e outdated package NuGet con remediation loop
 
 ### Il codice generato non compila
 
@@ -186,7 +192,7 @@ Poi apri il tuo coding tool e seleziona l'agente Vulcan appropriato dal menu.
 
 ### Migrazione da Vulcan v2 (legacy)
 
-Se avevi installato `Vulcan.agent.md` (v1/v2), l'installer v3.1 lo rimuove automaticamente. I tre nuovi agenti sostituiscono completamente il vecchio agente unificato. Se vuoi mantenere il vecchio agente, rinominalo prima di eseguire l'installer.
+Se avevi installato `Vulcan.agent.md` (v1/v2), l'installer v3.1 lo rimuove automaticamente. I quattro nuovi agenti sostituiscono completamente il vecchio agente unificato. Se vuoi mantenere il vecchio agente, rinominalo prima di eseguire l'installer.
 
 ---
 
