@@ -150,9 +150,8 @@ get_agent_body() {
     varname=$(get_body_varname "$agent_file")
 
     # Usa la cache se già popolata
-    eval "local cached=\"\${$varname:-}\""
-    if [[ -n "$cached" ]]; then
-        echo "$cached"
+    if [[ -n "${!varname:-}" ]]; then
+        echo "${!varname}"
         return 0
     fi
 
@@ -585,7 +584,12 @@ main() {
     print_banner
 
     detect_os
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    # Fallback per quando lo script è piped (curl | bash)
+    if [[ -n "${BASH_SOURCE[0]:-}" ]]; then
+        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    else
+        SCRIPT_DIR="$PWD"
+    fi
 
     local mode="install"
     local target_agent=""
