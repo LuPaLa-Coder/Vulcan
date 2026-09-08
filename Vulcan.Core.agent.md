@@ -325,54 +325,54 @@ Riconosci e correggi. Severità = urgenza.
 
 | # | Pattern | Fix |
 |---|---|---|
-| 1 | `async void` (non event handler) | `async Task` |
-| 2 | `.Result` / `.Wait()` / `.GetAwaiter().GetResult()` | `await` + propagare async |
-| 3 | `new HttpClient()` | `IHttpClientFactory` + named/typed client |
-| 4 | `catch (Exception)` senza re-throw o log | tipi specifici o `throw;` |
-| 5 | Exception swallow + return default | `OneOf<T, TError>` o propagare |
-| 6 | `DateTime.Now` / `DateTime.UtcNow` in business logic | `TimeProvider` iniettato |
-| 7 | API pubblica async senza `CancellationToken` | `CancellationToken cancellationToken = default` |
-| 8 | `lock` su `this` o `typeof(T)` | `private static readonly object _gate = new()` |
-| 9 | `IDisposable` con risorse async | `IAsyncDisposable` |
-| 10 | `Task.Run` per CPU-bound in ASP.NET Core | rimuovere — peggiora throughput |
+| NET1 | `async void` (non event handler) | `async Task` |
+| NET2 | `.Result` / `.Wait()` / `.GetAwaiter().GetResult()` | `await` + propagare async |
+| NET3 | `new HttpClient()` | `IHttpClientFactory` + named/typed client |
+| NET4 | `catch (Exception)` senza re-throw o log | tipi specifici o `throw;` |
+| NET5 | Exception swallow + return default | `OneOf<T, TError>` o propagare |
+| NET6 | `DateTime.Now` / `DateTime.UtcNow` in business logic | `TimeProvider` iniettato |
+| NET7 | API pubblica async senza `CancellationToken` | `CancellationToken cancellationToken = default` |
+| NET8 | `lock` su `this` o `typeof(T)` | `private static readonly object _gate = new()` |
+| NET9 | `IDisposable` con risorse async | `IAsyncDisposable` |
+| NET10 | `Task.Run` per CPU-bound in ASP.NET Core | rimuovere — peggiora throughput |
 
 ### Performance — correggi in hot path
 
 | # | Pattern | Fix |
 |---|---|---|
-| 11 | `string +=` in loop | `StringBuilder` o `string.Create` |
-| 12 | LINQ in tight loop (>1000×/s) | `for`/`foreach` o `Span<T>` |
-| 13 | `new Regex(...)` per ogni chiamata | `[GeneratedRegex]` |
-| 14 | `RegexOptions.Compiled` con <10 chiamate | regex non compilata o `[GeneratedRegex]` |
-| 15 | `.ToList()` prima di `.Where()` | filtra prima, materializza dopo |
-| 16 | `new Dictionary/List` senza capacità in hot path | capacità iniziale |
-| 17 | `params T[]` in hot path | overload espliciti o `ReadOnlySpan<T>` |
-| 18 | JSON senza source-gen | `JsonSerializerContext` + `[JsonSerializable]` |
+| NET11 | `string +=` in loop | `StringBuilder` o `string.Create` |
+| NET12 | LINQ in tight loop (>1000×/s) | `for`/`foreach` o `Span<T>` |
+| NET13 | `new Regex(...)` per ogni chiamata | `[GeneratedRegex]` |
+| NET14 | `RegexOptions.Compiled` con <10 chiamate | regex non compilata o `[GeneratedRegex]` |
+| NET15 | `.ToList()` prima di `.Where()` | filtra prima, materializza dopo |
+| NET16 | `new Dictionary/List` senza capacità in hot path | capacità iniziale |
+| NET17 | `params T[]` in hot path | overload espliciti o `ReadOnlySpan<T>` |
+| NET18 | JSON senza source-gen | `JsonSerializerContext` + `[JsonSerializable]` |
 
 ### Design — migliora quando possibile
 
 | # | Pattern | Fix |
 |---|---|---|
-| 19 | `.ToLower()`/`.ToUpper()` senza `StringComparison` | `StringComparison.OrdinalIgnoreCase` |
-| 20 | `.StartsWith`/`.EndsWith`/`.Contains` senza `StringComparison` | `StringComparison.Ordinal` |
-| 21 | `.Substring()` in hot path | `AsSpan().Slice(...)` |
-| 22 | `static readonly Dictionary` immutabile | `FrozenDictionary` |
-| 23 | Classi non `sealed` senza motivo | `sealed` di default |
-| 24 | Mutable `struct` esposti | `readonly struct` o classe |
-| 25 | `ConfigureAwait(false)` mancante in libreria | aggiungerlo nei code path di libreria |
-| 26 | Async che ritorna `IEnumerable<T>` con `yield` non-async | `IAsyncEnumerable<T>` + `await foreach` |
-| 27 | Logging con string interpolation | template strutturato |
-| 28 | `Environment.GetEnvironmentVariable` diretto | `IConfiguration` + Options Pattern |
-| 29 | Magic string per header/policy/claim | costanti tipizzate |
+| NET19 | `.ToLower()`/`.ToUpper()` senza `StringComparison` | `StringComparison.OrdinalIgnoreCase` |
+| NET20 | `.StartsWith`/`.EndsWith`/`.Contains` senza `StringComparison` | `StringComparison.Ordinal` |
+| NET21 | `.Substring()` in hot path | `AsSpan().Slice(...)` |
+| NET22 | `static readonly Dictionary` immutabile | `FrozenDictionary` |
+| NET23 | Classi non `sealed` senza motivo | `sealed` di default |
+| NET24 | Mutable `struct` esposti | `readonly struct` o classe |
+| NET25 | `ConfigureAwait(false)` mancante in libreria | aggiungerlo nei code path di libreria |
+| NET26 | Async che ritorna `IEnumerable<T>` con `yield` non-async | `IAsyncEnumerable<T>` + `await foreach` |
+| NET27 | Logging con string interpolation | template strutturato |
+| NET28 | `Environment.GetEnvironmentVariable` diretto | `IConfiguration` + Options Pattern |
+| NET29 | Magic string per header/policy/claim | costanti tipizzate |
 
 ### Supply chain — correggi sempre
 
 | # | Pattern | Fix |
 |---|---|---|
-| 30 | Vulnerabilità High/Critical (NU1903/NU1904) soppressa senza tracking | pin alla versione patchata o sostituzione; suppression solo tracciata (motivazione + data) |
-| 31 | Pacchetto deprecato in produzione | sostituzione col successore (tabelle provider AWS/Azure); isolamento se manca |
-| 32 | Floating version `*` / range aperti in CPM | versioni esatte + `packages.lock.json` committato |
-| 33 | TFM `net8.0`/`net9.0` con outdated non azzerabili | migra a `net10.0`, poi azzera (vedi *Migrazione a .NET 10*) |
+| NET30 | Vulnerabilità High/Critical (NU1903/NU1904) soppressa senza tracking | pin alla versione patchata o sostituzione; suppression solo tracciata (motivazione + data) |
+| NET31 | Pacchetto deprecato in produzione | sostituzione col successore (tabelle provider AWS/Azure); isolamento se manca |
+| NET32 | Floating version `*` / range aperti in CPM | versioni esatte + `packages.lock.json` committato |
+| NET33 | TFM `net8.0`/`net9.0` con outdated non azzerabili | migra a `net10.0`, poi azzera (vedi *Migrazione a .NET 10*) |
 
 ## Slopwatch — Pattern LLM da Bloccare
 
