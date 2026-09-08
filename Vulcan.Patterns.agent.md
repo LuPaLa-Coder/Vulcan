@@ -233,7 +233,7 @@ builder.Services
     .AddFiltering()
     .AddSorting()
     .AddProjections()
-    .ModifyOptions(o => o.DefaultQueryDsl = QueryDsl.GraphQL)
+    .AddMaxExecutionDepth(10)
     .AddDiagnosticEventListener<GraphQlErrorLogger>();
 
 app.MapGraphQL();
@@ -432,6 +432,8 @@ public sealed class CacheAside<T>(
 | **BenchmarkDotNet** | Micro-benchmark (metodo singolo) | Report HTML/Markdown |
 
 ### BenchmarkDotNet Template
+
+Richiede **BenchmarkDotNet 0.14+** per il moniker `RuntimeMoniker.Net100` (.NET 10). Se il progetto usa una versione precedente, verificare il moniker più recente supportato in quella versione prima di usare questo template.
 
 ```csharp
 [SimpleJob(RuntimeMoniker.Net100)]
