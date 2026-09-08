@@ -129,12 +129,14 @@ resource apim 'Microsoft.ApiManagement/service@2023-05-01-preview' = {
 }
 
 // Policy globale: rate limit + CORS
+// Nota: multi-line string ''' ''' non supporta interpolazione Bicep.
+// Usa concat() per inserire parametri dinamici.
 resource globalPolicy 'Microsoft.ApiManagement/service/policies@2023-05-01-preview' = {
   parent: apim
   name: 'policy'
   properties: {
     format: 'rawxml'
-    value: '''
+    value: concat('''
       <policies>
         <inbound>
           <rate-limit calls="100" renewal-period="60" />
@@ -142,7 +144,7 @@ resource globalPolicy 'Microsoft.ApiManagement/service/policies@2023-05-01-previ
             counter-key="@(context.Request.Headers.GetValueOrDefault("Ocp-Apim-Subscription-Key","anonymous"))" />
           <cors>
             <allowed-origins>
-              <origin>https://${projectName}.com</origin>
+              <origin>https://''', projectName, '''.com</origin>
             </allowed-origins>
             <allowed-methods>
               <method>GET</method>
@@ -151,7 +153,7 @@ resource globalPolicy 'Microsoft.ApiManagement/service/policies@2023-05-01-previ
               <method>DELETE</method>
             </allowed-methods>
           </cors>
-          <set-backend-service base-url="${functionAppUrl}" />
+          <set-backend-service base-url="''', functionAppUrl, '''" />
         </inbound>
         <outbound>
           <set-header name="X-Response-Time" exists-action="override">
@@ -164,7 +166,7 @@ resource globalPolicy 'Microsoft.ApiManagement/service/policies@2023-05-01-previ
           <set-body>{"error":"Internal server error"}</set-body>
         </on-error>
       </policies>
-    '''
+    ''')
   }
 }
 
@@ -399,7 +401,7 @@ Regola: **non** usare Durable Functions per orchestrazioni semplici (< 3 step, n
         ingress: {
           traffic: [
             { revisionName: 'myapp--abc123', weight: 90 }
-            { revisionName: 'myapp--def456', weight: 10  label: 'canary' }
+            { revisionName: 'myapp--def456', weight: 10, label: 'canary' }
           ]
         }
       }

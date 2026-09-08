@@ -237,12 +237,13 @@ public sealed class CreateOrderHandler(IAppDbContext db, TimeProvider clock)
     public async Task<OneOf<OrderCreated, ValidationFailed>> Handle(
         CreateOrderCommand cmd, CancellationToken ct)
     {
-        var order = Order.Create(cmd.CustomerId, cmd.Lines, clock.GetUtcNow());
-        if (order.IsFailed) return new ValidationFailed(order.Errors);
+        var orderResult = Order.Create(cmd.CustomerId, cmd.Lines, clock.GetUtcNow());
+        if (orderResult.IsT1) return (ValidationFailed)orderResult.AsT1;
 
-        db.Orders.Add(order.Value);
+        var order = orderResult.AsT0;
+        db.Orders.Add(order);
         await db.SaveChangesAsync(ct);
-        return new OrderCreated(order.Value.Id, order.Value.Total);
+        return new OrderCreated(order.Id, order.Total);
     }
 }
 
