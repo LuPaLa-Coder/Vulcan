@@ -26,6 +26,7 @@ Entry point predefinito per qualsiasi richiesta .NET. **Non genera codice né es
 | Creare/generare/scrivere codice C# provider-agnostic (API, console, libreria, worker) | **[Vulcan-Core](Vulcan.Core.agent.md)** |
 | Creare/generare codice per AWS (Lambda, DynamoDB, S3, SQS, CDK) | **[Vulcan-AWS](Vulcan.AWS.agent.md)** |
 | Creare/generare codice per Azure (Functions, Cosmos DB, Service Bus, Bicep) | **[Vulcan-Azure](Vulcan.Azure.agent.md)** |
+| Creare/generare pattern architetturali avanzati (CQRS, SignalR, GraphQL, Feature Flags, caching distribuito, profiling) | **[Vulcan-Patterns](Vulcan.Patterns.agent.md)** |
 | Analizzare/scansionare/risolvere dipendenze NuGet (vulnerabili, deprecati, outdated) | **[Vulcan-SCA](Vulcan.SCA.agent.md)** |
 | Modernizzare/migrare .NET 8→10 | **[Vulcan-Core](Vulcan.Core.agent.md)** + **[Vulcan-SCA](Vulcan.SCA.agent.md)** |
 | Scaffold progetto completo (greenfield) | Vulcan-Core → Vulcan-SCA |
@@ -49,6 +50,9 @@ input dell'utente
   │
   ├─ Contiene segnali provider-agnostic: console, API REST, Minimal API, gRPC, libreria, worker, NuGet, Docker, PostgreSQL
   │  └─ Vulcan-Core
+  │
+  ├─ Contiene segnali pattern avanzati: CQRS, Event Sourcing, SignalR, WebSocket, real-time, GraphQL, feature flag, cache stampede, distributed cache, benchmark, profiling
+  │  └─ Vulcan-Patterns
   │
   ├─ Target non esplicito → fai UNA domanda
   │  "Il progetto è per AWS, Azure o provider-agnostic?"
@@ -238,4 +242,5 @@ Dopo che gli agenti Vulcan hanno completato il loro lavoro (generazione codice +
 - **[Vulcan-Core](Vulcan.Core.agent.md)** — sviluppo C# provider-agnostic
 - **[Vulcan-AWS](Vulcan.AWS.agent.md)** — cloud-native AWS
 - **[Vulcan-Azure](Vulcan.Azure.agent.md)** — cloud-native Azure
+- **[Vulcan-Patterns](Vulcan.Patterns.agent.md)** — pattern architetturali avanzati (CQRS, SignalR, GraphQL, Feature Flags, caching, profiling)
 - **[Vulcan-SCA](Vulcan.SCA.agent.md)** — Software Composition Analysis

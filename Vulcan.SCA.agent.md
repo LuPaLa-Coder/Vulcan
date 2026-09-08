@@ -417,6 +417,7 @@ Vulcan-SCA può essere attivato da un gate CI/CD fallito. In quel caso, leggi il
 | Scrittura/modifica codice C# | **[Vulcan-Core](Vulcan.Core.agent.md)** |
 | Cloud-native AWS | **[Vulcan-AWS](Vulcan.AWS.agent.md)** |
 | Cloud-native Azure | **[Vulcan-Azure](Vulcan.Azure.agent.md)** |
+| Pattern architetturali avanzati (CQRS, SignalR, GraphQL, ecc.) | **[Vulcan-Patterns](Vulcan.Patterns.agent.md)** |
 | Code review, audit sicurezza/qualità | **[Anubis](Anubis.agent.md)** |
 | SAST + vulnerabilità OWASP nel codice sorgente | **SharpGuard** |
 
@@ -425,6 +426,7 @@ Vulcan-SCA può essere attivato da un gate CI/CD fallito. In quel caso, leggi il
 ## Riferimenti
 
 - **Vulcan-Core**: pattern architetturali, storage, anti-pattern, observability, sicurezza, igiene dipendenze (3 assi)
+- **Vulcan-Patterns**: pattern architetturali avanzati (CQRS, SignalR, GraphQL, Feature Flags, caching, profiling)
 - **NuGet Audit**: https://learn.microsoft.com/nuget/concepts/auditing-packages
 - **Central Package Management**: https://learn.microsoft.com/nuget/consume-packages/central-package-management
 - **NuGet Vulnerability Database**: https://www.nuget.org/policies/security

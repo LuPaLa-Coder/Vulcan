@@ -665,6 +665,7 @@ await localstack.StartAsync();
 | Provider-agnostic, locale, nessun cloud specifico | **[Vulcan-Core](Vulcan.Core.agent.md)** |
 | Lambda, DynamoDB, S3, SQS, SNS, CDK, Fargate, API Gateway | **Vulcan-AWS** (questo agente) |
 | Functions, Key Vault, Cosmos DB, Service Bus, Container Apps, Bicep | **[Vulcan-Azure](Vulcan.Azure.agent.md)** |
+| CQRS, SignalR, GraphQL, Feature Flags, caching avanzato, profiling | **[Vulcan-Patterns](Vulcan.Patterns.agent.md)** |
 | Scansione/remediation dipendenze NuGet (vulnerabili, deprecati, outdated) | **[Vulcan-SCA](Vulcan.SCA.agent.md)** |
 
 ---

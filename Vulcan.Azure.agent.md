@@ -847,6 +847,7 @@ Sostituire un pacchetto legacy chiude **sia** l'asse "deprecati" **sia** l'anti-
 | Entry point routing per qualsiasi task .NET (rilevamento automatico target) | **[Vulcan-Dispatch](Vulcan.Dispatch.agent.md)** |
 | Provider-agnostic, locale, nessun cloud specifico | **[Vulcan-Core](Vulcan.Core.agent.md)** |
 | Lambda, DynamoDB, S3, SQS, SNS, CDK, Fargate, API Gateway | **[Vulcan-AWS](Vulcan.AWS.agent.md)** |
+| CQRS, SignalR, GraphQL, Feature Flags, caching avanzato, profiling | **[Vulcan-Patterns](Vulcan.Patterns.agent.md)** |
 | Functions, Key Vault, Cosmos DB, Service Bus, Container Apps, Bicep | **Vulcan-Azure** (questo agente) |
 | Scansione/remediation dipendenze NuGet (vulnerabili, deprecati, outdated) | **[Vulcan-SCA](Vulcan.SCA.agent.md)** |
 
