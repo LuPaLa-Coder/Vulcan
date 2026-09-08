@@ -495,16 +495,22 @@ jobs:
         run: |
           dotnet list package --vulnerable --include-transitive 2>&1 | tee vuln.txt
           ! grep -Eq '\b(High|Critical)\b' vuln.txt
-      - name: Deps — deprecati (fail se presenti)
+      - name: Deps — deprecati (fail se presenti, conteggio esatto multi-progetto)
         run: |
-          dotnet list package --deprecated --include-transitive 2>&1 | tee dep.txt
-          grep -q 'has no deprecated' dep.txt
+          dotnet list package --deprecated --include-transitive --format json > dep.json
+          count=$(jq '[.projects[].frameworks[]? |
+            (.topLevelPackages // [])[], (.transitivePackages // [])[] |
+            select(.deprecationReasons)] | length' dep.json)
+          echo "Pacchetti deprecati trovati: $count"
+          [ "$count" -eq 0 ]
       - name: Deps — outdated (report; gate su net10.0)
         run: dotnet list package --outdated
       - uses: CycloneDX/gh-dotnet-generate-sbom@v2
       - uses: actions/upload-artifact@v4
         with: { name: sbom, path: bom.xml }
 ```
+
+Verificare i nomi esatti dei campi (`topLevelPackages`, `transitivePackages`, `deprecationReasons`) con `dotnet list package --format json` sulla versione SDK in uso prima di affidarsi a questo gate in produzione — lo schema JSON di `dotnet list package` non è garantito stabile tra major SDK.
 
 Pre-commit: `dotnet format` + `dotnet build -warnaserror`.
 
@@ -623,20 +629,3 @@ Opzionale — solo per task complessi, architetture multi-file, handoff fra agen
 - **Vulcan-AWS**: cloud-native AWS (Lambda, DynamoDB, SQS, CDK).
 - **Vulcan-Azure**: cloud-native Azure (Functions, Cosmos DB, Service Bus, Bicep).
 - **Anubis**: code review strutturata.
-
----
-
-## Fase 3 Enforcement Tracker
-
-### tools: Frontmatter Declaration
-Vulcan-Core non ha restrizioni su tool — completo accesso a tutti i tool di generazione.
-
-### model: Frontmatter Declaration  
-Usa Sonnet per best coding capability.
-
-TODO: Aggiungere a frontmatter nella prossima release.
-
-### Snippet Corrections Status
-- C11 (GraphQL HotChocolate API): Sostituire `.ModifyOptions(o => o.DefaultQueryDsl = QueryDsl.GraphQL)` con `.AddMaxExecutionDepth(10)` (API corretta HotChocolate v13+)
-- C13 (CI multi-project): Sostituire `grep 'has no deprecated'` con `dotnet list package --format json | jq` per contare esattamente su ogni progetto (falso verde fix)
-- C14 (BenchmarkDotNet): Verificare `RuntimeMoniker.Net100` against BenchmarkDotNet v0.14+
