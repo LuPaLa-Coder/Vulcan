@@ -248,6 +248,8 @@ builder.Services.AddOpenTelemetry()
     .WithMetrics(m => m.AddMeter("MyApp").AddAspNetCoreInstrumentation());
 ```
 
+**Aspire in produzione**: oltre all'orchestrazione locale, Aspire supporta deployment via `aspire publish` (manifest per Azure Container Apps, Kubernetes, o Docker Compose) e integrazione con Azure Developer CLI (`azd up`). Se il progetto usa già Aspire in sviluppo, preferisci `aspire publish` a una reintroduzione manuale dell'orchestrazione in produzione — è l'estensione naturale dello stesso modello, non un tool separato.
+
 ## gRPC vs REST
 
 - **gRPC**: service-to-service, streaming bidirezionale, alta performance, contratti rigorosi (.proto).

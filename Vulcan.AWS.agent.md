@@ -239,6 +239,20 @@ Usa **Private API Gateway** (VPC Endpoint) *quando* l'API deve essere accessibil
 
 Regola pratica: **Secrets Manager** per tutto ciò che cambia frequentemente o richiede rotation. **Parameter Store** per configurazione statica o segreti con rotation manuale.
 
+##### Secret Rotation Automatizzata
+
+Per segreti con supporto nativo (RDS, Aurora, DocumentDB, Redshift): rotation automatica via CDK, nessuna Lambda custom richiesta.
+
+```csharp
+secret.AddRotationSchedule("RotationSchedule", new RotationScheduleOptions
+{
+    HostedRotation = HostedRotation.MysqlSingleUser(),
+    AutomaticallyAfter = Duration.Days(30)
+});
+```
+
+Per segreti custom (API key esterne) senza rotation nativa: Lambda dedicata con le 4 fasi standard del framework Secrets Manager (`createSecret`/`setSecret`/`testSecret`/`finishSecret`), triggerata da EventBridge su schedule. **Mai** rotation manuale via script eseguito a mano.
+
 ---
 
 #### Edge — CloudFront + Lambda@Edge
@@ -428,6 +442,18 @@ Applica come filtro, non come checklist da spuntare. Tra parentesi il trigger.
 - **Performance**: client SDK fuori dall'handler; query DynamoDB (mai scan in prod → AWS3), GSI per pattern secondari; sizing memoria Lambda con Power Tuning *quando* la latenza/costo conta; cache (ElastiCache/DAX) *quando* hot-read ripetute dominano.
 - **Cost**: pay-per-use di default (Lambda, DynamoDB on-demand); commit a capacità riservata solo a volume costante dimostrato; lifecycle S3 e log retention come sopra; budget alert all'80%/100%.
 
+### Backup & Disaster Recovery
+
+| Servizio | Backup | Recovery |
+|---|---|---|
+| **DynamoDB** | Point-in-time Recovery (PITR, 35gg) + on-demand backup | Restore a nuova tabella, mai in-place |
+| **S3** | Versioning + Cross-Region Replication *quando* serve DR multi-region | Restore versione precedente o failover al bucket replica |
+| **RDS/Aurora** | Automated backup (1-35gg) + snapshot manuali | Point-in-time restore o restore da snapshot a nuova istanza |
+| **Lambda** | Codice in source control (Git); config in Parameter Store/Secrets Manager | Redeploy da CI/CD |
+| **Secrets Manager** | Versioning nativo dei secret | Rollback a versione precedente via `PreviousVersionId` |
+
+**Multi-region**: attiva solo *quando* esiste un RTO/RPO esplicito che lo richiede (default single-region + backup è sufficiente per la maggior parte dei workload). DynamoDB Global Tables per multi-region attivo-attivo; S3 CRR per DR attivo-passivo.
+
 #### CloudWatch Logs Insights — Query Pronte
 
 Query predefinite da usare in console CloudWatch → Logs Insights o via CLI:
@@ -574,6 +600,7 @@ await localstack.StartAsync();
   ```csharp
   Aspects.of(stack).Add(new AwsSolutionsChecks());
   ```
+- Per stack **Terraform** (se non CDK): **checkov** o **tfsec** come complemento equivalente a cdk-nag.
 - **TaskCat** (CloudFormation): test multi-region dei template SAM/CloudFormation.
 
 ## Guardrail Operativi

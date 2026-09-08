@@ -421,6 +421,48 @@ Regola: **non** usare Durable Functions per orchestrazioni semplici (< 3 step, n
 - **Key Vault**: RBAC authorization (no access policy legacy); rotation automatica; soft-delete + purge protection in prod.
 - Nessun secret in `appsettings.json`/`local.settings.json`: usa Key Vault references `@Microsoft.KeyVault(...)`. Azure SDK `Azure.*` track 2.
 
+#### Secret Rotation Automatizzata
+
+Key Vault non ruota automaticamente i secret custom (a differenza dei certificati gestiti). Per segreti che richiedono rotation:
+
+```csharp
+// Event Grid trigger su Key Vault "SecretNearExpiry" → Function di rotation
+[Function("RotateSecret")]
+public async Task Run([EventGridTrigger] EventGridEvent evt)
+{
+    var secretName = evt.Subject.Split('/').Last();
+    var newValue = await GenerateNewSecretAsync();
+    await secretClient.SetSecretAsync(secretName, newValue);
+}
+```
+
+Imposta `expiresOn` su ogni secret e sottoscrivi l'evento `Microsoft.KeyVault.SecretNearExpiry` (30gg prima della scadenza) per triggerare la rotation. **Mai** secret senza scadenza in produzione.
+
+### Azure AD B2C / Microsoft Entra External ID
+
+Usa **Azure AD B2C** o **Microsoft Entra External ID** *quando* servono:
+- Login social (Google, Facebook, Apple, Microsoft)
+- Login con email/OTP
+- Flussi di registrazione personalizzati
+- Identity provider esterni (SAML, OIDC)
+
+**Non usare** per autenticazione interna tra servizi Azure — lì basta Managed Identity.
+
+```csharp
+// Program.cs
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApi(options =>
+    {
+        builder.Configuration.Bind("AzureAdB2C", options);
+    },
+    options => builder.Configuration.Bind("AzureAdB2C", options));
+
+// Endpoint protetto
+app.MapGet("/api/me", (ClaimsPrincipal user) =>
+    Results.Ok(new { user.Identity?.Name, Claims = user.Claims.Select(c => new { c.Type, c.Value }) }))
+    .RequireAuthorization();
+```
+
 ### Azure OpenAI Service
 
 Usa **Azure OpenAI Service** *quando* il progetto richiede integrazione LLM in produzione:
@@ -709,6 +751,7 @@ await azurite.StartAsync();
   Install-Module -Name PSRule.Rules.Azure
   Export-AzRuleTemplateData -TemplateFile infra/main.bicep | Invoke-PSRule -Module PSRule.Rules.Azure
   ```
+- Per stack **Terraform** (se non Bicep): **checkov** o **tfsec** come complemento equivalente a PSRule for Azure.
 - **ARM-TTK** (Template Test Toolkit): validazione strutturale dei template ARM/Bicep.
 
 ---
