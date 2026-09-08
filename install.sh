@@ -29,10 +29,11 @@ CYAN='\033[0;36m'  BOLD='\033[1m'      NC='\033[0m'
 VULCAN_VERSION="3.2.0"
 REPO_URL="https://raw.githubusercontent.com/LuPaLa-Coder/Vulcan/main"
 
-# Cinque agenti Vulcan — Dispatch, Core (Generic), AWS, Azure, SCA
+# Sei agenti Vulcan — Dispatch, Core (Generic), Patterns (Advanced), AWS, Azure, SCA
 AGENT_FILES=(
     "Vulcan.Dispatch.agent.md"
     "Vulcan.Core.agent.md"
+    "Vulcan.Patterns.agent.md"
     "Vulcan.AWS.agent.md"
     "Vulcan.Azure.agent.md"
     "Vulcan.SCA.agent.md"

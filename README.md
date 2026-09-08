@@ -8,6 +8,7 @@ Vulcan è una famiglia di **cinque agenti specializzati** per lo sviluppo C# e .
 |---|---|---|---|
 | **Vulcan-Dispatch** | Entry point: rilevamento automatico target (Generic/AWS/Azure) e tipo task (code-gen, SCA) → delega all'agente corretto | `Vulcan.Dispatch.agent.md` | 9.8 KB |
 | **Vulcan-Core** | Provider-agnostic: API REST, Minimal API, gRPC, console, librerie, worker + API versioning, OpenAPI, storage locale/self-managed | `Vulcan.Core.agent.md` | 47.2 KB |
+| **Vulcan-Patterns** | Advanced patterns: CQRS, SignalR, GraphQL, Feature Flags, Caching, Profiling (quando la complessità lo giustifica) | `Vulcan.Patterns.agent.md` | 9.7 KB |
 | **Vulcan-AWS** | AWS cloud-native: Lambda, DynamoDB, SQS, SNS, S3, ECS, CDK + EventBridge Pipes, CloudFront, API GW v2, LocalStack, cdk-nag | `Vulcan.AWS.agent.md` | 32.3 KB |
 | **Vulcan-Azure** | Azure cloud-native: Functions, Cosmos DB, Service Bus, Container Apps, Bicep + Durable Functions, Logic Apps, blue-green, Azurite, PSRule | `Vulcan.Azure.agent.md` | 36.7 KB |
 | **Vulcan-SCA** | Software Composition Analysis per NuGet: vulnerabilità, deprecazioni, outdated package con remediation loop iterativo (max 10 iter) | `Vulcan.SCA.agent.md` | 17.8 KB |
@@ -16,17 +17,19 @@ Vulcan è una famiglia di **cinque agenti specializzati** per lo sviluppo C# e .
 
 ---
 
-## Perché Cinque Agenti Specializzati?
+## Perché Sei Agenti Specializzati?
 
 Dopo l'analisi del manifesto Vulcan v2 (47KB monolite), abbiamo identificato che un prompt unico causa:
 - **Context window saturation**: le istruzioni in fondo vengono dimenticate
 - **Applicazione inconsistente**: regole generiche e cloud-specifiche competono
 - **Token sprecati**: il modello processa regole AWS anche quando lavori su Azure
 - **Assenza di routing**: no entry point intelligente
+- **Pattern avanzati mescolati con CRUD**: complessità nascosta
 
-La soluzione: **cinque agenti specializzati, con Dispatch come router**.
+La soluzione: **sei agenti specializzati, con Dispatch come router**.
 - **Vulcan-Dispatch** (9.8KB): entry point routing → rileva target e task → delega all'agente corretto
 - **Vulcan-Core** (47.2KB): motore decisionale Generic/.NET (setup, architettura, storage, anti-pattern, observability, qualità)
+- **Vulcan-Patterns** (9.7KB): pattern avanzati (CQRS, SignalR, GraphQL, Feature Flags, Caching, Profiling) — quando la complessità lo giustifica
 - **Vulcan-AWS** (32.3KB): AWS cloud-native (Lambda, DynamoDB, CDK, EventBridge, …)
 - **Vulcan-Azure** (36.7KB): Azure cloud-native (Functions, Cosmos DB, Bicep, Durable Functions, …)
 - **Vulcan-SCA** (17.8KB): scansione dipendenze NuGet e remediation loop
@@ -58,7 +61,7 @@ La soluzione: **cinque agenti specializzati, con Dispatch come router**.
 curl -fsSL https://raw.githubusercontent.com/LuPaLa-Coder/Vulcan/main/install.sh | bash
 ```
 
-Lo script installa **tutti i cinque agenti** (Vulcan-Dispatch, Vulcan-Core, Vulcan-AWS, Vulcan-Azure, Vulcan-SCA) in ogni coding agent rilevato.
+Lo script installa **tutti i sei agenti** (Vulcan-Dispatch, Vulcan-Core, Vulcan-Patterns, Vulcan-AWS, Vulcan-Azure, Vulcan-SCA) in ogni coding agent rilevato.
 
 ### Opzioni di Installazione
 
@@ -189,6 +192,7 @@ Vulcan/
 |---|---|
 | **Qualsiasi task .NET** (routing automatico consigliato) | **Vulcan-Dispatch** ← *Inizia da qui* |
 | Console app, libreria, API generica, gRPC service, storage locale/self-managed | **Vulcan-Core** |
+| CQRS, SignalR, GraphQL, Feature Flags, Caching, Profiling (pattern avanzati) | **Vulcan-Patterns** |
 | Lambda, DynamoDB, S3, SQS, SNS, ECS, CDK, API Gateway, CloudFront, EventBridge Pipes | **Vulcan-AWS** |
 | Functions, Cosmos DB, Service Bus, Container Apps, Bicep, Durable Functions, Logic Apps | **Vulcan-Azure** |
 | Scansione/remediation dipendenze NuGet (vulnerabilità, deprecazioni, outdated) | **Vulcan-SCA** |
