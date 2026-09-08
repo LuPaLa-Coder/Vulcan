@@ -362,7 +362,7 @@ public sealed class OrderService(
 
 ---
 
-### Distributed Caching — Strategie Avanzate
+## Distributed Caching — Strategie Avanzate
 
 ### Livelli
 
