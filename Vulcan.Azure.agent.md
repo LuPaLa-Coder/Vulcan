@@ -437,16 +437,20 @@ Usa **OpenAI diretta** per prototyping rapido senza vincoli Azure.
 builder.Services.AddAzureOpenAIClient(builder.Configuration["AzureOpenAI:Endpoint"]!,
     new DefaultAzureCredential());
 
-builder.Services.AddSingleton(sp =>
+builder.Services.AddSingleton<IChatCompletionService>(sp =>
 {
     var azureClient = sp.GetRequiredService<AzureOpenAIClient>();
-    var kernelBuilder = Kernel.CreateBuilder();
-    kernelBuilder.Services.AddAzureOpenAIChatCompletion(
+    return new AzureOpenAIChatCompletionService(
         deploymentName: builder.Configuration["AzureOpenAI:Deployment"]!,
         azureOpenAIClient: azureClient);
-    return kernelBuilder.Build();
 });
 
+builder.Services.AddKernel();
+```
+
+Verificare la firma esatta di `AzureOpenAIChatCompletionService` contro la versione di Semantic Kernel in uso — l'API dei connector SK cambia tra minor version.
+
+```csharp
 // Chat completions con content safety
 public sealed class AiOrderService(
     IChatCompletionService chat,
