@@ -100,9 +100,10 @@ TEMPLATE_FILES=(
 )
 
 # Cache per i corpi degli agenti (scaricati/letti una volta sola)
-# Cinque variabili invece di array associativo per compatibilità POSIX
+# Sei variabili invece di array associativo per compatibilità POSIX
 _BODY_DISPATCH=""
 _BODY_CORE=""
+_BODY_PATTERNS=""
 _BODY_AWS=""
 _BODY_AZURE=""
 _BODY_SCA=""
@@ -112,6 +113,7 @@ get_body_varname() {
     case "$1" in
         "Vulcan.Dispatch.agent.md") echo "_BODY_DISPATCH" ;;
         "Vulcan.Core.agent.md") echo "_BODY_CORE" ;;
+        "Vulcan.Patterns.agent.md") echo "_BODY_PATTERNS" ;;
         "Vulcan.AWS.agent.md")  echo "_BODY_AWS" ;;
         "Vulcan.Azure.agent.md") echo "_BODY_AZURE" ;;
         "Vulcan.SCA.agent.md") echo "_BODY_SCA" ;;
@@ -277,11 +279,12 @@ EOF
 }
 
 # Estrae il nome breve dell'agente dal filename
-# Vulcan.Dispatch.agent.md → Dispatch, Vulcan.Core.agent.md → Core, Vulcan.AWS.agent.md → AWS, Vulcan.Azure.agent.md → Azure, Vulcan.SCA.agent.md → SCA
+# Vulcan.Dispatch.agent.md → Dispatch, Vulcan.Core.agent.md → Core, Vulcan.Patterns.agent.md → Patterns, Vulcan.AWS.agent.md → AWS, Vulcan.Azure.agent.md → Azure, Vulcan.SCA.agent.md → SCA
 get_agent_short_name() {
     local agent_file="$1"
     if [[ "$agent_file" == *".Dispatch."* ]]; then echo "Dispatch"
     elif [[ "$agent_file" == *".Core."* ]]; then echo "Core"
+    elif [[ "$agent_file" == *".Patterns."* ]]; then echo "Patterns"
     elif [[ "$agent_file" == *".AWS."* ]]; then echo "AWS"
     elif [[ "$agent_file" == *".Azure."* ]]; then echo "Azure"
     elif [[ "$agent_file" == *".SCA."* ]]; then echo "SCA"
