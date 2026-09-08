@@ -125,12 +125,6 @@ jobs:
             lines=$(wc -l < "$agent")
             size_kb=$(du -k "$agent" | cut -f1)
 
-            # Core temporarily exempted (Fase 4 will split it)
-            if [[ "$agent" == "Vulcan.Core.agent.md" ]]; then
-              echo "  (exempted) $agent: $lines lines, ${size_kb}KB"
-              continue
-            fi
-
             if [ "$lines" -gt "$max_lines" ]; then
               echo "❌ $agent: $lines lines (max: $max_lines)"
               exit 1
