@@ -144,3 +144,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: echo "ℹ️ Regression checks (RC-1..57) pending conversion to executable evals"
+
+  partials-drift:
+    name: Shared Blocks Drift Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rigenera dai partial e confronta
+        run: |
+          chmod +x scripts/sync-partials.sh
+          ./scripts/sync-partials.sh
+          if ! git diff --exit-code; then
+            echo "❌ Un blocco condiviso è stato editato a mano invece che in partials/. Editare il file in partials/ e rilanciare scripts/sync-partials.sh."
+            exit 1
+          fi
+          echo "✓ Nessun drift nei blocchi condivisi"
