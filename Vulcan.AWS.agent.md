@@ -104,22 +104,28 @@ Usa **S3 Object Lambda** *quando* devi trasformare dati S3 al volo per consumer 
 
 ```csharp
 // Lambda che aggiunge watermark a un'immagine S3
-public sealed class WatermarkFunction
-{
-    public async Task<Stream> FunctionHandler(
-        S3ObjectLambdaEvent request,
-        ILambdaContext context)
-    {
-        var s3Client = new AmazonS3Client();
-        var getObjectRequest = new GetObjectRequest
-        {
-            BucketName = request.InputS3Uri.Bucket,
-            Key = request.InputS3Uri.Key
-        };
+// Startup — registrato una sola volta (AWS2: mai client SDK nell'handler)
+services.AddAWSService<IAmazonS3>();
+services.AddHttpClient();
 
-        using var original = await s3Client.GetObjectAsync(getObjectRequest);
-        using var watermarked = await ApplyWatermark(original.ResponseStream, "CONFIDENTIAL");
-        return watermarked;
+public sealed class WatermarkFunction(IAmazonS3 s3Client, HttpClient httpClient)
+{
+    public async Task FunctionHandler(S3ObjectLambdaEvent request, ILambdaContext context)
+    {
+        var goc = request.GetObjectContext;
+
+        // Fetch dall'URL presigned fornito da S3 Object Lambda, non GetObject su bucket/key
+        using var originalResponse = await httpClient.GetAsync(goc.InputS3Url);
+        using var originalStream = await originalResponse.Content.ReadAsStreamAsync();
+        using var watermarked = await ApplyWatermark(originalStream, "CONFIDENTIAL");
+
+        // Contratto reale S3 Object Lambda: risposta via WriteGetObjectResponseAsync
+        await s3Client.WriteGetObjectResponseAsync(new WriteGetObjectResponseRequest
+        {
+            RequestRoute = goc.OutputRoute,
+            RequestToken = goc.OutputToken,
+            Body = watermarked
+        });
     }
 }
 ```
@@ -556,7 +562,7 @@ services:
 ```csharp
 // TestContainers per test .NET
 var localstack = new LocalStackBuilder()
-    .WithServices(LocalStackService.DynamoDB, LocalStackService.SQS)
+    .WithEnvironment("SERVICES", "dynamodb,sqs")
     .Build();
 await localstack.StartAsync();
 ```
