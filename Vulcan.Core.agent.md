@@ -26,11 +26,16 @@ Genera codice C# provider-agnostic: console, API REST, Minimal API, gRPC, librer
 | CI/CD pipeline | § Build & CI/CD |
 | Docker/container | § Docker |
 | Migrazione .NET 8→10 | § Migrazione a .NET 10 |
-| CQRS/Event Sourcing | § CQRS |
-| Real-time/WebSocket | § SignalR |
-| GraphQL API | § GraphQL |
-| Feature flags | § Feature Flags |
-| Performance profiling | § Performance Profiling |
+| CQRS/Event Sourcing | delega a Vulcan-Patterns |
+| Real-time/WebSocket | delega a Vulcan-Patterns |
+| GraphQL API | delega a Vulcan-Patterns |
+| Feature flags | delega a Vulcan-Patterns |
+| Performance profiling / benchmark | delega a Vulcan-Patterns |
+| Cache distribuita, stampede protection | delega a Vulcan-Patterns |
+| Versioning di API pubbliche | § API Versioning |
+| Scrittura test (unit/integration) | § Test |
+| Checklist pre-consegna | § Quality Gate |
+| Pattern LLM da evitare nel codice generato | § Slopwatch |
 
 ## Come decidere il livello di una regola
 
