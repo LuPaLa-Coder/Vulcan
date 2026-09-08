@@ -41,32 +41,61 @@ AGENT_FILES=(
 # Agente legacy (v1/v2) da rimuovere in upgrade
 LEGACY_AGENT_FILE="Vulcan.agent.md"
 
-# Descrizioni per frontmatter (funzione invece di array associativo per compatibilità POSIX)
+# Estrae la description dal frontmatter YAML del file agente
+# Prova locale prima, poi scarica da GitHub
 get_agent_description() {
-    case "$1" in
-        "Vulcan.Dispatch.agent.md")
-            echo 'Vulcan-Dispatch — Agente Smistatore: rileva automaticamente il target (Generic/AWS/Azure) e il tipo di task (code-gen, SCA), poi delega all-agente Vulcan specializzato corretto. Usare come entry point predefinito per qualsiasi richiesta .NET.'
-            ;;
-        "Vulcan.Core.agent.md")
-            echo 'Vulcan-Core C# Agent — sviluppo C# moderno (.NET 10 LTS), provider-agnostic con Serilog + OpenTelemetry, LiteDB/MongoDB/PostgreSQL, supply-chain hardened e pattern architetturali puliti. Usare per GENERARE codice C# in contesto Generic; per AWS usare Vulcan-AWS, per Azure usare Vulcan-Azure. Per CODE REVIEW usare Anubis.'
-            ;;
-        "Vulcan.AWS.agent.md")
-            echo 'Vulcan-AWS C# Agent — sviluppo cloud-native su AWS con .NET 10 LTS: Lambda, DynamoDB, SQS, SNS, S3, ECS, API Gateway, CDK. Usare per GENERARE codice C# con target AWS. Per codice provider-agnostic usare Vulcan-Core, per Azure usare Vulcan-Azure.'
-            ;;
-        "Vulcan.Azure.agent.md")
-            echo 'Vulcan-Azure C# Agent — sviluppo cloud-native su Azure con .NET 10 LTS: Functions, Cosmos DB, Service Bus, Container Apps, Key Vault, Bicep. Usare per GENERARE codice C# con target Azure. Per codice provider-agnostic usare Vulcan-Core, per AWS usare Vulcan-AWS.'
-            ;;
-        "Vulcan.SCA.agent.md")
-            echo 'Vulcan-SCA — Software Composition Analysis Agent per ecosistema .NET: analisi automatica pacchetti NuGet (vulnerabilità, deprecazione, obsolescenza), remediation loop con delega a Vulcan-Core, verifica iterativa fino a 0 vulnerabili · 0 deprecati · 0 outdated. Usare per SCANSIONE e REMEDIATION automatica delle dipendenze NuGet. Per generazione codice usare Vulcan-Core, per code review usare Anubis.'
-            ;;
-    esac
+    local agent_file="$1"
+    local src=""
+
+    if [[ -f "$SCRIPT_DIR/$agent_file" ]]; then
+        src="$SCRIPT_DIR/$agent_file"
+    else
+        src=$(mktemp)
+        if command -v curl &>/dev/null; then
+            curl -fsSL "${REPO_URL}/${agent_file}" -o "$src" 2>/dev/null || {
+                rm -f "$src"
+                echo "Unknown Agent" >&2
+                return 1
+            }
+        elif command -v wget &>/dev/null; then
+            wget -q "${REPO_URL}/${agent_file}" -O "$src" 2>/dev/null || {
+                rm -f "$src"
+                echo "Unknown Agent" >&2
+                return 1
+            }
+        else
+            echo "Unknown Agent" >&2
+            return 1
+        fi
+    fi
+
+    # Estrai il valore di 'description:' dal frontmatter YAML (fra i due ---)
+    local desc
+    desc=$(awk '
+      BEGIN { in_frontmatter = 0 }
+      /^---$/ { in_frontmatter++; next }
+      in_frontmatter == 1 && /^description:/ {
+        # Rimuovi il prefisso "description: " e le virgolette
+        gsub(/^description: *"?/, ""); gsub(/"?$/, "")
+        print
+        exit
+      }
+    ' "$src")
+
+    # Pulizia se è stato scaricato
+    if [[ "$src" != "$SCRIPT_DIR/$agent_file" ]]; then
+        rm -f "$src"
+    fi
+
+    echo "$desc"
 }
 
 # Template files da installare — vanno in una subdirectory per evitare
 # che OpenCode/Copilot/Cursor li interpretino come agent separati
 TEMPLATE_DIR="vulcan-templates"
 TEMPLATE_FILES=(
-    
+    "vulcan-aws-templates.md"
+    "vulcan-azure-templates.md"
 )
 
 # Cache per i corpi degli agenti (scaricati/letti una volta sola)

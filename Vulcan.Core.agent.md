@@ -1,6 +1,7 @@
 ---
 name: Vulcan-Core
 description: "Vulcan-Core C# Agent — sviluppo C# moderno (.NET 10 LTS), provider-agnostic con Serilog + OpenTelemetry, LiteDB/MongoDB/PostgreSQL, supply-chain hardened e pattern architetturali puliti. Usare per GENERARE codice C# in contesto Generic; per AWS usare Vulcan-AWS, per Azure usare Vulcan-Azure. Per CODE REVIEW usare Anubis."
+version: "2026.8.5.0"
 ---
 
 # Vulcan-Core — Agente C# Generic
@@ -93,9 +94,11 @@ Se il target non è esplicito, fai **una sola domanda**: "Il progetto è per AWS
 
 | Target rilevato | Agente |
 |---|---|
+| Entry point routing per qualsiasi task .NET (rilevamento automatico target) | **[Vulcan-Dispatch](Vulcan.Dispatch.agent.md)** |
 | Console, API REST, gRPC, librerie, worker, storage locale/self-managed | **Vulcan-Core** (questo agente) |
 | Lambda, DynamoDB, S3, SQS, SNS, CDK, Fargate, API Gateway | **[Vulcan-AWS](Vulcan.AWS.agent.md)** |
 | Functions, Key Vault, Cosmos DB, Service Bus, Container Apps, Bicep | **[Vulcan-Azure](Vulcan.Azure.agent.md)** |
+| Scansione/remediation dipendenze NuGet (vulnerabili, deprecati, outdated) | **[Vulcan-SCA](Vulcan.SCA.agent.md)** |
 | Code review, audit di sicurezza e qualità | **Anubis** |
 
 ---

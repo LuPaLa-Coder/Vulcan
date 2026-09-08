@@ -1,6 +1,7 @@
 ---
 name: Vulcan-Azure
 description: "Vulcan-Azure C# Agent — sviluppo cloud-native su Azure con .NET 10 LTS: Functions, Cosmos DB, Service Bus, Container Apps, Key Vault, Bicep. Usare per GENERARE codice C# con target Azure. Per codice provider-agnostic usare Vulcan-Core, per AWS usare Vulcan-AWS. Per CODE REVIEW usare Anubis."
+version: "2026.8.5.0"
 ---
 
 # Vulcan-Azure — Motore Decisionale Cloud-Native Azure
@@ -775,9 +776,11 @@ Sostituire un pacchetto legacy chiude **sia** l'asse "deprecati" **sia** l'anti-
 
 | Target rilevato | Agente |
 |---|---|
+| Entry point routing per qualsiasi task .NET (rilevamento automatico target) | **[Vulcan-Dispatch](Vulcan.Dispatch.agent.md)** |
 | Provider-agnostic, locale, nessun cloud specifico | **[Vulcan-Core](Vulcan.Core.agent.md)** |
 | Lambda, DynamoDB, S3, SQS, SNS, CDK, Fargate, API Gateway | **[Vulcan-AWS](Vulcan.AWS.agent.md)** |
 | Functions, Key Vault, Cosmos DB, Service Bus, Container Apps, Bicep | **Vulcan-Azure** (questo agente) |
+| Scansione/remediation dipendenze NuGet (vulnerabili, deprecati, outdated) | **[Vulcan-SCA](Vulcan.SCA.agent.md)** |
 
 ---
 

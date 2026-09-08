@@ -2,10 +2,11 @@
 
 ## Overview
 
-La famiglia Vulcan è composta da tre agenti specializzati per lo sviluppo C#:
+La famiglia Vulcan è composta da cinque agenti specializzati per lo sviluppo C#:
 
 | Agente | Target | Quando usarlo |
 |---|---|---|
+| **Vulcan-Dispatch** | Entry point intelligente | **Inizio consigliato**: qualsiasi richiesta .NET — rileva il target e delega |
 | **Vulcan-Core** | Provider-agnostic | Console app, API REST, Minimal API, gRPC, librerie, worker service |
 | **Vulcan-AWS** | AWS | Lambda, DynamoDB, SQS, SNS, S3, ECS, API Gateway, CDK |
 | **Vulcan-Azure** | Azure | Functions, Cosmos DB, Service Bus, Container Apps, Key Vault, Bicep |
@@ -264,3 +265,44 @@ Se cambi idea sul provider cloud, usa l'agente appropriato per la nuova richiest
 ---
 
 **Pronto per iniziare?** Vedi gli **[Examples](./examples.md)** per scenari real-world.
+
+---
+
+### Workflow 5: Automatic Routing con Vulcan-Dispatch
+
+**Goal**: Lascia che Dispatch rilevi il target e instradi automaticamente
+
+1. **Seleziona Vulcan-Dispatch** (entry point consigliato)
+
+2. **Request generica** (senza indicare il target):
+   ```
+   "Crea una funzione serverless per processare file CSV,
+    salvare su DB e inviare notifica via email"
+   ```
+
+3. **Vulcan-Dispatch**:
+   - Rileva segnali: "serverless", "file", "DB", "email"
+   - Decide: AWS Lambda oppure Azure Functions?
+   - Delega a **Vulcan-AWS** o **Vulcan-Azure**
+   - L'agente specifico genera il codice completo
+
+### Workflow 6: Dependency Analysis con Vulcan-SCA
+
+**Goal**: Scansionare e correggere vulnerabilità NuGet
+
+1. **Seleziona Vulcan-SCA**
+
+2. **Request**:
+   ```
+   "Scansiona il progetto per pacchetti vulnerabili,
+    deprecati e outdated. Correggi automaticamente."
+   ```
+
+3. **Vulcan-SCA esegue**:
+   - Legge il `.csproj` / `packages.config`
+   - Scansiona i tre assi: vulnerabilità → deprecazioni → outdated
+   - Genera fix (upgrade, replace)
+   - Delega a **Vulcan-Core** per implementare le correzioni
+   - Re-scansiona fino a 0 vulnerabili · 0 deprecati · 0 outdated
+   - Ritorna lista cambiamenti + CHANGELOG aggiornato
+

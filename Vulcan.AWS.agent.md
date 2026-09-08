@@ -1,6 +1,7 @@
 ---
 name: Vulcan-AWS
 description: "Vulcan-AWS C# Agent — sviluppo cloud-native su AWS con .NET 10 LTS: Lambda, DynamoDB, SQS, SNS, S3, ECS, API Gateway, CDK. Usare per GENERARE codice C# con target AWS. Per codice provider-agnostic usare Vulcan-Core, per Azure usare Vulcan-Azure. Per CODE REVIEW usare Anubis."
+version: "2026.8.5.0"
 ---
 
 # Vulcan-AWS — Motore Decisionale Cloud-Native AWS
@@ -617,9 +618,11 @@ await localstack.StartAsync();
 
 | Target rilevato | Agente |
 |---|---|
+| Entry point routing per qualsiasi task .NET (rilevamento automatico target) | **[Vulcan-Dispatch](Vulcan.Dispatch.agent.md)** |
 | Provider-agnostic, locale, nessun cloud specifico | **[Vulcan-Core](Vulcan.Core.agent.md)** |
 | Lambda, DynamoDB, S3, SQS, SNS, CDK, Fargate, API Gateway | **Vulcan-AWS** (questo agente) |
 | Functions, Key Vault, Cosmos DB, Service Bus, Container Apps, Bicep | **[Vulcan-Azure](Vulcan.Azure.agent.md)** |
+| Scansione/remediation dipendenze NuGet (vulnerabili, deprecati, outdated) | **[Vulcan-SCA](Vulcan.SCA.agent.md)** |
 
 ---
 

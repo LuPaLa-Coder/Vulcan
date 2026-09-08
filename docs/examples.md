@@ -619,3 +619,71 @@ copilot /agent Vulcan
 - **Get help**: Review main [README](./README.md)
 
 Happy coding! 🚀
+
+---
+
+### Example 5: Automatic Target Detection (Vulcan-Dispatch)
+
+**Scenario**: User describes a need without specifying AWS or Azure
+
+**Request to Vulcan-Dispatch**:
+```
+"Crea una pipeline di data processing che:
+ - legge file da storage cloud
+ - valida con schema
+ - salva in database
+ - notifica al termine"
+```
+
+**Vulcan-Dispatch analyzes**:
+- "storage cloud" → could be S3 or Azure Blob
+- "database" → could be DynamoDB or Cosmos DB
+- "pipeline" → AWS: EventBridge? Azure: Logic Apps?
+- Asks clarifying question: "È AWS o Azure?"
+
+**User replies**: "AWS"
+
+**Dispatch delegates** → Vulcan-AWS generates complete solution
+
+---
+
+### Example 6: NuGet Dependency Scanning (Vulcan-SCA)
+
+**Scenario**: Audit project for vulnerable, deprecated, outdated packages
+
+**Request to Vulcan-SCA**:
+```
+"Scannerizza la soluzione per:
+ - Pacchetti vulnerabili (NU1903/NU1904)
+ - Pacchetti deprecati
+ - Pacchetti outdated
+Correggi automaticamente se possibile."
+```
+
+**Vulcan-SCA process**:
+
+1. **Scan** → Legge tutti i `.csproj`
+   ```
+   ✗ Newtonsoft.Json 12.0.0 (vulnerabile: NU1903)
+   ✗ Serilog 2.9.0 (deprecato)
+   ✗ Entity Framework 6.4.0 (outdated: 8.0.1 available)
+   ```
+
+2. **Propose fixes**:
+   ```
+   → Upgrade Newtonsoft.Json a 13.0.3 (vulnerabilità risolta)
+   → Upgrade Serilog a 4.0.0 (supportato)
+   → Upgrade Entity Framework a 8.0.1 (LTS)
+   ```
+
+3. **Delegate** → Vulcan-Core implementa le correzioni
+   ```
+   ✓ Updated .csproj files
+   ✓ Updated Program.cs per API changes
+   ✓ Ran tests (local via LocalStack/Azurite)
+   ```
+
+4. **Re-scan** → Verify zero findings
+
+5. **Generate** → CHANGELOG.md entry, summary report
+

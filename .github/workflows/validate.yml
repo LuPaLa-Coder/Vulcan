@@ -1,0 +1,152 @@
+name: Vulcan Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint-agents:
+    name: Lint Agent Frontmatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check frontmatter YAML
+        run: |
+          for agent_file in Vulcan.*.agent.md; do
+            echo "Validating $agent_file..."
+
+            # Extract frontmatter
+            frontmatter=$(sed -n '/^---$/,/^---$/p' "$agent_file")
+
+            # Check required fields
+            if ! echo "$frontmatter" | grep -q "^name:"; then
+              echo "❌ $agent_file: missing 'name:' field"
+              exit 1
+            fi
+
+            if ! echo "$frontmatter" | grep -q "^description:"; then
+              echo "❌ $agent_file: missing 'description:' field"
+              exit 1
+            fi
+
+            if ! echo "$frontmatter" | grep -q "^version:"; then
+              echo "❌ $agent_file: missing 'version:' field"
+              exit 1
+            fi
+
+            echo "✓ $agent_file OK"
+          done
+
+      - name: Check name uniqueness
+        run: |
+          names=$(grep "^name:" Vulcan.*.agent.md | cut -d' ' -f2- | sort)
+          duplicates=$(echo "$names" | sort | uniq -d)
+          if [ -n "$duplicates" ]; then
+            echo "❌ Duplicate agent names: $duplicates"
+            exit 1
+          fi
+          echo "✓ All agent names unique"
+
+  link-check:
+    name: Check Internal Links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate markdown links
+        run: |
+          # Check all [text](file) links point to existing files or are external
+          for file in Vulcan.*.agent.md README.md docs/*.md CHANGELOG.md; do
+            [ -f "$file" ] || continue
+            echo "Checking links in $file..."
+
+            grep -o '\[.*\](.*\.md)' "$file" | sed 's/.*(\(.*\)).*/\1/' | while read link; do
+              if [[ "$link" == http* ]]; then
+                echo "  (external) $link"
+              elif [ ! -f "$link" ]; then
+                echo "❌ Broken link in $file: $link"
+                exit 1
+              fi
+            done
+          done
+          echo "✓ All links valid"
+
+  sync-check:
+    name: Sync Configuration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check agent file list consistency
+        run: |
+          echo "Checking install.sh vs Vulcan.*.agent.md files..."
+
+          # Extract agent files from install.sh
+          install_agents=$(grep 'AGENT_FILES=' -A 10 install.sh | grep '\.agent\.md' | tr -d ' "' | sort)
+
+          # Get actual agent files
+          actual_agents=$(ls Vulcan.*.agent.md | sort)
+
+          if [ "$install_agents" != "$actual_agents" ]; then
+            echo "❌ install.sh AGENT_FILES out of sync"
+            echo "Expected: $actual_agents"
+            echo "Found: $install_agents"
+            exit 1
+          fi
+
+          echo "✓ install.sh AGENT_FILES consistent"
+
+      - name: Check README agent table
+        run: |
+          echo "Checking README agent table..."
+          agent_count=$(grep "Vulcan-Core\|Vulcan-AWS\|Vulcan-Azure\|Vulcan-SCA\|Vulcan-Dispatch" README.md | grep -c "|" || echo 0)
+          if [ "$agent_count" -lt 5 ]; then
+            echo "❌ README agent table incomplete (found ~$agent_count lines, expected 5+)"
+            exit 1
+          fi
+          echo "✓ README mentions all 5 agents"
+
+  size-budget:
+    name: Agent Size Budget Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check agent sizes
+        run: |
+          echo "Checking agent file sizes..."
+          max_lines=900
+          max_size_kb=40
+
+          for agent in Vulcan.*.agent.md; do
+            lines=$(wc -l < "$agent")
+            size_kb=$(du -k "$agent" | cut -f1)
+
+            # Core temporarily exempted (Fase 4 will split it)
+            if [[ "$agent" == "Vulcan.Core.agent.md" ]]; then
+              echo "  (exempted) $agent: $lines lines, ${size_kb}KB"
+              continue
+            fi
+
+            if [ "$lines" -gt "$max_lines" ]; then
+              echo "❌ $agent: $lines lines (max: $max_lines)"
+              exit 1
+            fi
+
+            if [ "$size_kb" -gt "$max_size_kb" ]; then
+              echo "❌ $agent: ${size_kb}KB (max: ${max_size_kb}KB)"
+              exit 1
+            fi
+
+            echo "✓ $agent: $lines lines, ${size_kb}KB"
+          done
+
+  regression-checks:
+    name: Regression Checks (Placeholder)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "ℹ️ Regression checks (RC-1..57) pending conversion to executable evals"
