@@ -2,6 +2,8 @@
 name: Vulcan-Dispatch
 description: "Vulcan-Dispatch — Agente Smistatore: rileva automaticamente il target (Generic/AWS/Azure) e il tipo di task (code-gen, SCA), poi delega all'agente Vulcan specializzato corretto. Usare come entry point predefinito per qualsiasi richiesta .NET."
 version: "2026.8.5.0"
+model: "claude-sonnet-5"
+tools: ["write", "edit", "read", "bash"]
 category: "orchestration"
 capabilities:
   - task-routing

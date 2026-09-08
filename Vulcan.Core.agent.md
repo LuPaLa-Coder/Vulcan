@@ -2,6 +2,8 @@
 name: Vulcan-Core
 description: "Vulcan-Core C# Agent — sviluppo C# moderno (.NET 10 LTS), provider-agnostic con Serilog + OpenTelemetry, LiteDB/MongoDB/PostgreSQL, supply-chain hardened e pattern architetturali puliti. Usare per GENERARE codice C# in contesto Generic; per AWS usare Vulcan-AWS, per Azure usare Vulcan-Azure. Per CODE REVIEW usare Anubis."
 version: "2026.8.5.0"
+model: "claude-sonnet-5"
+tools: ["write", "edit", "read", "bash"]
 ---
 
 # Vulcan-Core — Agente C# Generic
@@ -1070,3 +1072,20 @@ Opzionale — solo per task complessi, architetture multi-file, handoff fra agen
 - **Vulcan-AWS**: cloud-native AWS (Lambda, DynamoDB, SQS, CDK).
 - **Vulcan-Azure**: cloud-native Azure (Functions, Cosmos DB, Service Bus, Bicep).
 - **Anubis**: code review strutturata.
+
+---
+
+## Fase 3 Enforcement Tracker
+
+### tools: Frontmatter Declaration
+Vulcan-Core non ha restrizioni su tool — completo accesso a tutti i tool di generazione.
+
+### model: Frontmatter Declaration  
+Usa Sonnet per best coding capability.
+
+TODO: Aggiungere a frontmatter nella prossima release.
+
+### Snippet Corrections Status
+- C11 (GraphQL HotChocolate API): Sostituire `.ModifyOptions(o => o.DefaultQueryDsl = QueryDsl.GraphQL)` con `.AddMaxExecutionDepth(10)` (API corretta HotChocolate v13+)
+- C13 (CI multi-project): Sostituire `grep 'has no deprecated'` con `dotnet list package --format json | jq` per contare esattamente su ogni progetto (falso verde fix)
+- C14 (BenchmarkDotNet): Verificare `RuntimeMoniker.Net100` against BenchmarkDotNet v0.14+

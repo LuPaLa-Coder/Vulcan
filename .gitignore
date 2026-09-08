@@ -10,3 +10,4 @@ vulcan-improvement-plan.md
 # OS files
 .DS_Store
 Thumbs.db
+*.bak

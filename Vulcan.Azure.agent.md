@@ -2,6 +2,8 @@
 name: Vulcan-Azure
 description: "Vulcan-Azure C# Agent — sviluppo cloud-native su Azure con .NET 10 LTS: Functions, Cosmos DB, Service Bus, Container Apps, Key Vault, Bicep. Usare per GENERARE codice C# con target Azure. Per codice provider-agnostic usare Vulcan-Core, per AWS usare Vulcan-AWS. Per CODE REVIEW usare Anubis."
 version: "2026.8.5.0"
+model: "claude-sonnet-5"
+tools: ["write", "edit", "read", "bash"]
 ---
 
 # Vulcan-Azure — Motore Decisionale Cloud-Native Azure

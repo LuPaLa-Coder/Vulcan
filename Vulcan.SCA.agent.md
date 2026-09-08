@@ -2,6 +2,8 @@
 name: Vulcan-SCA
 description: "Vulcan-SCA — Software Composition Analysis Agent per ecosistema .NET: analisi automatica pacchetti NuGet (vulnerabilità, deprecazione, obsolescenza), remediation loop con delega a Vulcan-Core, verifica iterativa fino a 0 vulnerabili · 0 deprecati · 0 outdated. Usare per SCANSIONE e REMEDIATION automatica delle dipendenze NuGet. Per generazione codice usare Vulcan-Core, per code review usare Anubis."
 version: "2026.8.5.0"
+model: "claude-sonnet-5"
+tools: ["write", "edit", "read", "bash"]
 ---
 
 # Vulcan-SCA — Software Composition Analysis Agent
