@@ -1,7 +1,7 @@
 ---
 name: Vulcan-AWS
 description: "Vulcan-AWS C# Agent — sviluppo cloud-native su AWS con .NET 10 LTS: Lambda, DynamoDB, SQS, SNS, S3, ECS, API Gateway, CDK. Usare per GENERARE codice C# con target AWS. Per codice provider-agnostic usare Vulcan-Core, per Azure usare Vulcan-Azure. Per CODE REVIEW usare Anubis."
-version: "2026.8.5.0"
+version: "2026.9.8.0"
 model: "claude-sonnet-5"
 tools: ["write", "edit", "read", "bash"]
 ---

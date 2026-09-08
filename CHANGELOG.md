@@ -1,5 +1,35 @@
 # Vulcan Release History
 
+## [2026.9.8.0] - 2026-09-08
+
+### Vulcan-Patterns — scorporo reale (non più uno skeleton)
+Vulcan-Core scende da ~1091 a 642 righe: CQRS, SignalR, GraphQL, Feature Flags, Distributed Caching e Performance Profiling vivono ora per intero in Vulcan-Patterns (499 righe), non più duplicati né linkati. Le rispettive tabelle anti-pattern (CQRS1-5, SIG1-5, GQL1-5, FF1-3, PROF1-3) sono complete in Patterns con il proprio prefisso di famiglia; il catalogo generico NET1-33 resta su Vulcan-Core, invariato. La Quick Route di Core è stata reindicizzata: le voci CQRS/Event Sourcing, real-time/WebSocket, GraphQL, feature flags, profiling/benchmark e caching distribuita delegano ora a Vulcan-Patterns.
+
+### Fix onesti (verificati nel codice, non solo dichiarati)
+- C6 (AWS): S3 Object Lambda usa il contratto reale `WriteGetObjectResponseAsync` con client iniettato via DI, non `new AmazonS3Client()` nell'handler
+- C9 (Azure): mocking Cosmos DB corretto su `ReadItemAsync<T>` (non `GetItemAsync`, che non esiste sull'SDK)
+- C10 (Azure): Semantic Kernel registrato con istanza `AzureOpenAIClient` risolta da DI, non una factory lambda inesistente
+- C11 (Patterns): rimossa l'API HotChocolate inesistente `DefaultQueryDsl`, sostituita con `AddMaxExecutionDepth(10)`
+- C12 (AWS): LocalStack testcontainer configurato via `WithEnvironment("SERVICES", ...)`, non `WithServices(...)`
+- C13 (Core): gate CI deprecati basato su conteggio JSON esatto (`dotnet list package --format json` + `jq`), non un grep che dà falso verde
+- C14 (Patterns): annotata la versione minima di BenchmarkDotNet (0.14+) richiesta per `RuntimeMoniker.Net100`
+- C15 (Azure): API version APIM pinnata a una GA (`2022-08-01`), non più una preview in un template "production-ready"
+- Rimosso il blocco "Fase 3 Enforcement Tracker" rimasto nel prompt di produzione di Vulcan-Core invece di tradursi in fix reali
+
+### Enforcement
+- Vulcan-SCA: `tools` ristretto a `["read", "bash"]` — enforcement reale del profilo read-only dichiarato
+- Vulcan-Dispatch: `model` alleggerito a Haiku — routing puro non richiede lo stesso modello della generazione
+
+### Blocchi condivisi
+Nuova cartella `partials/` con 2 blocchi canonici realmente comuni a Core/AWS/Azure — Guardrail Operativi (i due bullet base) e Profili Operativi (tabella read-only/write) — con `scripts/sync-partials.sh` per la sincronizzazione e un job CI `partials-drift` che blocca la ri-divergenza silenziosa. Vulcan-SCA e Vulcan-Dispatch restano fuori: il loro contenuto guardrail/profili è bespoke per design, non un'estensione del nucleo comune.
+
+### Contenuto aggiunto
+- F1 (AWS): tabella Backup/DR aggiunta a Vulcan-AWS, in simmetria con Vulcan-Azure — inclusa la procedura di rollback reale di Secrets Manager via `UpdateSecretVersionStage`
+- F2 (AWS/Azure): pattern di secret rotation automatizzata su entrambi i provider
+- F3 (Core): nota su .NET Aspire in produzione (`aspire publish`), non solo in sviluppo
+- F6 (Azure): sezione Azure AD B2C / Microsoft Entra External ID su Vulcan-Azure
+- F8 (AWS/Azure): checkov/tfsec come complemento a cdk-nag/PSRule per stack Terraform
+
 ## [2026.8.5.0] - 2026-08-05
 
 ### Vulcan-Dispatch (v2026.8.5.0)

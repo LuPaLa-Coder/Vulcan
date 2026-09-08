@@ -1,7 +1,7 @@
 ---
 name: Vulcan-Core
 description: "Vulcan-Core C# Agent — sviluppo C# moderno (.NET 10 LTS), provider-agnostic con Serilog + OpenTelemetry, LiteDB/MongoDB/PostgreSQL, supply-chain hardened e pattern architetturali puliti. Usare per GENERARE codice C# in contesto Generic; per AWS usare Vulcan-AWS, per Azure usare Vulcan-Azure. Per CODE REVIEW usare Anubis."
-version: "2026.8.5.0"
+version: "2026.9.8.0"
 model: "claude-sonnet-5"
 tools: ["write", "edit", "read", "bash"]
 ---

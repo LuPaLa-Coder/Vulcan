@@ -82,6 +82,17 @@ Ogni agente è completo e auto-sufficiente per il suo target. Scegli l'agente gi
 - Managed Identity, Key Vault, RBAC
 - Testing cloud-native con Azurite + Cosmos DB Emulator + TestContainers
 
+### Quando usare Vulcan-Patterns
+
+- CQRS quando la complessità del dominio (reporting pesante, audit storico) giustifica la separazione read/write
+- SignalR per notifiche real-time a più client connessi (non polling)
+- GraphQL quando servono query flessibili lato client con schema in evoluzione
+- Feature Flags per rollout progressivi e A/B testing
+- Caching distribuito avanzato (multi-livello, invalidazione, cache-aside evoluto)
+- Performance profiling con BenchmarkDotNet
+
+Usa Vulcan-Patterns solo quando un segnale concreto (scala, latenza, molteplicità di consumer) giustifica la complessità architetturale aggiuntiva. Per generazione base (API REST, storage, setup progetto) usa Vulcan-Core, che delega qui solo quando serve.
+
 ### Progetti Multi-Cloud o Ibridi
 
 Se il progetto usa servizi di entrambi i cloud:
@@ -305,4 +316,23 @@ Se cambi idea sul provider cloud, usa l'agente appropriato per la nuova richiest
    - Delega a **Vulcan-Core** per implementare le correzioni
    - Re-scansiona fino a 0 vulnerabili · 0 deprecati · 0 outdated
    - Ritorna lista cambiamenti + CHANGELOG aggiornato
+
+### Workflow 7: Real-Time Dashboard con Vulcan-Patterns
+
+**Goal**: Aggiungere un dashboard con aggiornamenti live
+
+1. **Request**:
+   ```
+   "Aggiungi un dashboard con aggiornamenti live degli ordini"
+   ```
+
+2. **Vulcan-Dispatch** rileva il segnale "live" → instrada a **Vulcan-Patterns**
+
+3. **Vulcan-Patterns valuta**: notifiche push a più client connessi → SignalR è il pattern corretto (non polling)
+
+4. **Vulcan-Patterns propone**: Hub tipizzato + `IHubContext` per la pubblicazione da servizio
+
+5. **Handoff a Vulcan-Core** per il setup del progetto base (se non esiste già)
+
+6. **Vulcan-Patterns implementa**: Hub + notifier + anti-pattern guardrail (SIG1-5)
 

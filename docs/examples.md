@@ -687,3 +687,23 @@ Correggi automaticamente se possibile."
 
 5. **Generate** → CHANGELOG.md entry, summary report
 
+### Example 7: CQRS + SignalR per Order Tracking (Vulcan-Patterns)
+
+**Scenario**: Add CQRS to the order service with real-time notifications on status change
+
+**Request to Vulcan-Dispatch**:
+```
+"Aggiungi CQRS al servizio ordini con notifiche real-time
+ quando lo stato cambia."
+```
+
+**Routing**: Vulcan-Dispatch rileva "CQRS" e "real-time" → instrada a Vulcan-Patterns
+
+**Vulcan-Patterns process**:
+
+1. **Decision** → Motore decisionale CQRS applicato: read model separato solo se il progetto ha reporting pesante o audit storico esplicito, altrimenti CQRS base sullo stesso DB (evita l'anti-pattern CQRS4, Event Sourcing per CRUD semplice)
+
+2. **Implement** → `NotificationHub` tipizzato con `INotificationClient`, pubblicazione da `OrderNotifier` (non dall'Hub direttamente — anti-pattern SIG1)
+
+3. **Delegate** → Handoff a Vulcan-Core per setup progetto/storage se il progetto non esiste ancora
+

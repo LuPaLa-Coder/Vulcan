@@ -26,7 +26,7 @@ RED='\033[0;31m'   GREEN='\033[0;32m'   YELLOW='\033[1;33m'
 CYAN='\033[0;36m'  BOLD='\033[1m'      NC='\033[0m'
 
 # ── Configurazione ───────────────────────────────────────────────────────────
-VULCAN_VERSION="3.2.0"
+VULCAN_VERSION="3.3.0"
 REPO_URL="https://raw.githubusercontent.com/LuPaLa-Coder/Vulcan/main"
 
 # Sei agenti Vulcan — Dispatch, Core (Generic), Patterns (Advanced), AWS, Azure, SCA

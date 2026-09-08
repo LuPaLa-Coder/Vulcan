@@ -1,17 +1,17 @@
 # Vulcan C# Agent Family
 
-**Modern C# Development — Five Specialized Agents for Every Target**
+**Modern C# Development — Six Specialized Agents for Every Target**
 
-Vulcan è una famiglia di **cinque agenti specializzati** per lo sviluppo C# e .NET 10 LTS, ciascuno ottimizzato per un dominio specifico:
+Vulcan è una famiglia di **sei agenti specializzati** per lo sviluppo C# e .NET 10 LTS, ciascuno ottimizzato per un dominio specifico:
 
 | Agente | Target | File | Dimensione |
 |---|---|---|---|
-| **Vulcan-Dispatch** | Entry point: rilevamento automatico target (Generic/AWS/Azure) e tipo task (code-gen, SCA) → delega all'agente corretto | `Vulcan.Dispatch.agent.md` | 9.8 KB |
-| **Vulcan-Core** | Provider-agnostic: API REST, Minimal API, gRPC, console, librerie, worker + API versioning, OpenAPI, storage locale/self-managed | `Vulcan.Core.agent.md` | 47.2 KB |
-| **Vulcan-Patterns** | Advanced patterns: CQRS, SignalR, GraphQL, Feature Flags, Caching, Profiling (quando la complessità lo giustifica) | `Vulcan.Patterns.agent.md` | 9.7 KB |
-| **Vulcan-AWS** | AWS cloud-native: Lambda, DynamoDB, SQS, SNS, S3, ECS, CDK + EventBridge Pipes, CloudFront, API GW v2, LocalStack, cdk-nag | `Vulcan.AWS.agent.md` | 32.3 KB |
-| **Vulcan-Azure** | Azure cloud-native: Functions, Cosmos DB, Service Bus, Container Apps, Bicep + Durable Functions, Logic Apps, blue-green, Azurite, PSRule | `Vulcan.Azure.agent.md` | 36.7 KB |
-| **Vulcan-SCA** | Software Composition Analysis per NuGet: vulnerabilità, deprecazioni, outdated package con remediation loop iterativo (max 10 iter) | `Vulcan.SCA.agent.md` | 17.8 KB |
+| **Vulcan-Dispatch** | Entry point: rilevamento automatico target (Generic/AWS/Azure) e tipo task (code-gen, SCA) → delega all'agente corretto | `Vulcan.Dispatch.agent.md` | 241 righe, 12 KB |
+| **Vulcan-Core** | Provider-agnostic: API REST, Minimal API, gRPC, console, librerie, worker + API versioning, OpenAPI, storage locale/self-managed | `Vulcan.Core.agent.md` | 642 righe, 36 KB |
+| **Vulcan-Patterns** | Advanced patterns: CQRS, SignalR, GraphQL, Feature Flags, Caching, Profiling (quando la complessità lo giustifica) | `Vulcan.Patterns.agent.md` | 499 righe, 20 KB |
+| **Vulcan-AWS** | AWS cloud-native: Lambda, DynamoDB, SQS, SNS, S3, ECS, CDK + EventBridge Pipes, CloudFront, API GW v2, LocalStack, cdk-nag | `Vulcan.AWS.agent.md` | 679 righe, 36 KB |
+| **Vulcan-Azure** | Azure cloud-native: Functions, Cosmos DB, Service Bus, Container Apps, Bicep + Durable Functions, Logic Apps, blue-green, Azurite, PSRule | `Vulcan.Azure.agent.md` | 863 righe, 40 KB |
+| **Vulcan-SCA** | Software Composition Analysis per NuGet: vulnerabilità, deprecazioni, outdated package con remediation loop iterativo (max 10 iter) | `Vulcan.SCA.agent.md` | 432 righe, 20 KB |
 
 **Unico formato: Agent** — installabile globalmente su tutti i coding agent (Claude Code, OpenCode, GitHub Copilot, Cursor, Windsurf, Codex).
 
@@ -113,7 +113,7 @@ cp Vulcan.Azure.agent.md ~/.claude/agents/
 cp Vulcan.SCA.agent.md ~/.claude/agents/
 ```
 
-Dopo l'installazione, tutti e cinque gli agenti appaiono nel menu agenti: **Vulcan-Dispatch** (entry point), **Vulcan-Core**, **Vulcan-AWS**, **Vulcan-Azure** e **Vulcan-SCA**.
+Dopo l'installazione, tutti e sei gli agenti appaiono nel menu agenti: **Vulcan-Dispatch** (entry point), **Vulcan-Core**, **Vulcan-Patterns**, **Vulcan-AWS**, **Vulcan-Azure** e **Vulcan-SCA**.
 
 Per la guida completa, vedi **[Installation Guide](./docs/installation.md)** .
 
@@ -126,6 +126,7 @@ Per la guida completa, vedi **[Installation Guide](./docs/installation.md)** .
 Alternativamente, seleziona l'agente specifico se conosci il target:
    - **Vulcan-Dispatch** per qualsiasi task .NET (routing intelligente) ← **CONSIGLIATO**
    - **Vulcan-Core** per API generiche, console app, librerie, storage locale
+   - **Vulcan-Patterns** per CQRS, SignalR, GraphQL, Feature Flags, caching avanzato, profiling (pattern architetturali quando la complessità lo giustifica)
    - **Vulcan-AWS** per Lambda, DynamoDB, SQS, CDK
    - **Vulcan-Azure** per Functions, Cosmos DB, Service Bus, Bicep
    - **Vulcan-SCA** per scansione/remediation dipendenze NuGet

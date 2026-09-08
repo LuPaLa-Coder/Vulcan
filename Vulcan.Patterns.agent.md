@@ -1,7 +1,7 @@
 ---
 name: Vulcan-Patterns
 description: "Vulcan-Patterns C# Agent — Specialized patterns for advanced .NET architectures: CQRS, SignalR, GraphQL, Feature Flags, Distributed Caching, Performance Profiling. Usare quando il problema richiede pattern arcitetturali avanzati (non per CRUD semplice). Delega base a Vulcan-Core per setup/storage/anti-pattern."
-version: "2026.8.5.0"
+version: "2026.9.8.0"
 model: "claude-sonnet-5"
 tools: ["write", "edit", "read", "bash"]
 ---
