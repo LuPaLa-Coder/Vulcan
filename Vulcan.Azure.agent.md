@@ -117,7 +117,9 @@ Usa **Azure API Management** *quando* hai API pubbliche/partner con:
 **Bicep: APIM + Policy Rate Limiting**
 
 ```bicep
-resource apim 'Microsoft.ApiManagement/service@2023-05-01-preview' = {
+// api-version 2022-08-01 (GA) — verificare contro l'indice Bicep types corrente
+// se è disponibile una GA più recente al momento dell'uso
+resource apim 'Microsoft.ApiManagement/service@2022-08-01' = {
   name: 'apim-${projectName}'
   location: location
   sku: {
@@ -133,7 +135,7 @@ resource apim 'Microsoft.ApiManagement/service@2023-05-01-preview' = {
 // Policy globale: rate limit + CORS
 // Nota: multi-line string ''' ''' non supporta interpolazione Bicep.
 // Usa concat() per inserire parametri dinamici.
-resource globalPolicy 'Microsoft.ApiManagement/service/policies@2023-05-01-preview' = {
+resource globalPolicy 'Microsoft.ApiManagement/service/policies@2022-08-01' = {
   parent: apim
   name: 'policy'
   properties: {
@@ -173,7 +175,7 @@ resource globalPolicy 'Microsoft.ApiManagement/service/policies@2023-05-01-previ
 }
 
 // API definition + version set
-resource apiVersionSet 'Microsoft.ApiManagement/service/apiVersionSets@2023-05-01-preview' = {
+resource apiVersionSet 'Microsoft.ApiManagement/service/apiVersionSets@2022-08-01' = {
   parent: apim
   name: 'orders-api-versions'
   properties: {
@@ -435,10 +437,15 @@ Usa **OpenAI diretta** per prototyping rapido senza vincoli Azure.
 builder.Services.AddAzureOpenAIClient(builder.Configuration["AzureOpenAI:Endpoint"]!,
     new DefaultAzureCredential());
 
-builder.Services.AddKernel()
-    .AddAzureOpenAIChatCompletion(
+builder.Services.AddSingleton(sp =>
+{
+    var azureClient = sp.GetRequiredService<AzureOpenAIClient>();
+    var kernelBuilder = Kernel.CreateBuilder();
+    kernelBuilder.Services.AddAzureOpenAIChatCompletion(
         deploymentName: builder.Configuration["AzureOpenAI:Deployment"]!,
-        azureOpenAIClient: sp => sp.GetRequiredService<AzureOpenAIClient>());
+        azureOpenAIClient: azureClient);
+    return kernelBuilder.Build();
+});
 
 // Chat completions con content safety
 public sealed class AiOrderService(
@@ -665,8 +672,11 @@ Usa **Moq** (o NSubstitute) per mockare i client Azure SDK:
 ```csharp
 var mockCosmosClient = new Mock<CosmosClient>();
 var mockContainer = new Mock<Container>();
-mockContainer.Setup(x => x.GetItemAsync<MyItem>(It.IsAny<string>(), It.IsAny<PartitionKey>(), null, default))
-    .ReturnsAsync(Response.FromValue(new MyItem(), new Mock<Response>().Object));
+var mockResponse = new Mock<ItemResponse<MyItem>>();
+mockResponse.Setup(r => r.Resource).Returns(new MyItem());
+mockContainer.Setup(x => x.ReadItemAsync<MyItem>(
+        It.IsAny<string>(), It.IsAny<PartitionKey>(), null, default))
+    .ReturnsAsync(mockResponse.Object);
 ```
 
 ### Integration test con Azurite + Cosmos DB Emulator
