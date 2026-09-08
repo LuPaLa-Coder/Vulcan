@@ -16,7 +16,12 @@ for target in Vulcan.*.agent.md; do
       $0 == end { in_block = 0 }
       !in_block { print }
     ' "$target" > "${target}.tmp"
-    mv "${target}.tmp" "$target"
+    # Nota: `cat > target` (non `mv`) per riscrivere in place e preservare
+    # i permessi originali del file target — `mv` sostituirebbe l'inode
+    # con quello del temp file (permessi di default da umask), rompendo
+    # l'idempotenza quando il target ha un mode non standard (es. 755).
+    cat "${target}.tmp" > "$target"
+    rm -f "${target}.tmp"
   done
 done
 
