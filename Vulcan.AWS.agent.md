@@ -450,7 +450,7 @@ Applica come filtro, non come checklist da spuntare. Tra parentesi il trigger.
 | **S3** | Versioning + Cross-Region Replication *quando* serve DR multi-region | Restore versione precedente o failover al bucket replica |
 | **RDS/Aurora** | Automated backup (1-35gg) + snapshot manuali | Point-in-time restore o restore da snapshot a nuova istanza |
 | **Lambda** | Codice in source control (Git); config in Parameter Store/Secrets Manager | Redeploy da CI/CD |
-| **Secrets Manager** | Versioning nativo dei secret | Rollback a versione precedente via `PreviousVersionId` |
+| **Secrets Manager** | Versioning nativo dei secret | Rollback tramite `UpdateSecretVersionStage` (sposta lo staging label `AWSCURRENT` sulla versione `AWSPREVIOUS`) |
 
 **Multi-region**: attiva solo *quando* esiste un RTO/RPO esplicito che lo richiede (default single-region + backup è sufficiente per la maggior parte dei workload). DynamoDB Global Tables per multi-region attivo-attivo; S3 CRR per DR attivo-passivo.
 
