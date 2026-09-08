@@ -321,17 +321,15 @@ public interface INotificationClient
     Task ErrorOccurred(string code, string message);
 }
 
-public sealed class NotificationHub : Hub<INotificationClient>
+public sealed class NotificationHub(ILogger<NotificationHub> logger) : Hub<INotificationClient>
 {
-    private readonly ILogger<NotificationHub> _logger;
-
     public override async Task OnConnectedAsync()
     {
         var userId = Context.UserIdentifier;
         if (!string.IsNullOrEmpty(userId))
-            await Groups.AddToGroupAsync(Context.ConnectionId, $"user-{userId}");
+            await Groups.AddToGroupAsync(Context.ConnectionId, GroupNames.ForUser(userId));
 
-        _logger.LogDebug("Client {ConnectionId} connesso come user {UserId}",
+        logger.LogDebug("Client {ConnectionId} connesso come user {UserId}",
             Context.ConnectionId, userId);
         await base.OnConnectedAsync();
     }
@@ -340,9 +338,9 @@ public sealed class NotificationHub : Hub<INotificationClient>
     {
         var userId = Context.UserIdentifier;
         if (!string.IsNullOrEmpty(userId))
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"user-{userId}");
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, GroupNames.ForUser(userId));
 
-        _logger.LogDebug("Client {ConnectionId} disconnesso", Context.ConnectionId);
+        logger.LogDebug("Client {ConnectionId} disconnesso", Context.ConnectionId);
         await base.OnDisconnectedAsync(ex);
     }
 }
@@ -352,13 +350,13 @@ public sealed class OrderNotifier(
     IHubContext<NotificationHub, INotificationClient> hubContext,
     ILogger<OrderNotifier> logger) : IOrderNotifier
 {
-    public async Task NotifyStatusChange(Guid orderId, string status, CancellationToken ct)
+    public async Task NotifyStatusChange(Guid orderId, string userId, string status, CancellationToken ct)
     {
         await hubContext.Clients
-            .Group($"user-{orderId}")
+            .User(userId)
             .OrderStatusChanged(orderId, status, DateTimeOffset.UtcNow);
 
-        logger.LogInformation("Notifica status ordine {OrderId} → {Status}", orderId, status);
+        logger.LogInformation("Notifica status ordine {OrderId} → {Status} per user {UserId}", orderId, status, userId);
     }
 }
 ```
@@ -680,29 +678,30 @@ public sealed class CacheAside<T>(
     Func<CancellationToken, Task<T>> factory,
     int ttlSeconds = 300)
 {
-    private static readonly SemaphoreSlim _gate = new(1, 1);
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> _gates = [];
 
     public async ValueTask<T> GetAsync(string key, CancellationToken ct = default)
     {
         var cached = await cache.GetAsync(key, ct);
-        if (cached is not null) return Deserialize<T>(cached);
+        if (cached is not null) return JsonSerializer.Deserialize<T>(cached)!;
 
-        // Stampede protection: solo un thread ricostruisce
-        await _gate.WaitAsync(ct);
+        // Per-key stampede protection: solo un thread ricostruisce questa chiave specifica
+        var gate = _gates.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync(ct);
         try
         {
             cached = await cache.GetAsync(key, ct); // Double-check
-            if (cached is not null) return Deserialize<T>(cached);
+            if (cached is not null) return JsonSerializer.Deserialize<T>(cached)!;
 
             var value = await factory(ct);
-            await cache.SetAsync(key, Serialize(value),
+            await cache.SetAsync(key, JsonSerializer.SerializeToUtf8Bytes(value),
                 new DistributedCacheEntryOptions
                 {
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(ttlSeconds)
                 }, ct);
             return value;
         }
-        finally { _gate.Release(); }
+        finally { gate.Release(); }
     }
 }
 ```
