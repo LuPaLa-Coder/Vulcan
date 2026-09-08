@@ -108,13 +108,14 @@ Usa **S3 Object Lambda** *quando* devi trasformare dati S3 al volo per consumer 
 services.AddAWSService<IAmazonS3>();
 services.AddHttpClient();
 
-public sealed class WatermarkFunction(IAmazonS3 s3Client, HttpClient httpClient)
+public sealed class WatermarkFunction(IAmazonS3 s3Client, IHttpClientFactory httpClientFactory)
 {
     public async Task FunctionHandler(S3ObjectLambdaEvent request, ILambdaContext context)
     {
         var goc = request.GetObjectContext;
 
         // Fetch dall'URL presigned fornito da S3 Object Lambda, non GetObject su bucket/key
+        using var httpClient = httpClientFactory.CreateClient();
         using var originalResponse = await httpClient.GetAsync(goc.InputS3Url);
         using var originalStream = await originalResponse.Content.ReadAsStreamAsync();
         using var watermarked = await ApplyWatermark(originalStream, "CONFIDENTIAL");
