@@ -2,14 +2,16 @@
 
 ## Overview
 
-La famiglia Vulcan è composta da cinque agenti specializzati per lo sviluppo C#:
+La famiglia Vulcan è composta da sei agenti specializzati per lo sviluppo C#:
 
 | Agente | Target | Quando usarlo |
 |---|---|---|
 | **Vulcan-Dispatch** | Entry point intelligente | **Inizio consigliato**: qualsiasi richiesta .NET — rileva il target e delega |
 | **Vulcan-Core** | Provider-agnostic | Console app, API REST, Minimal API, gRPC, librerie, worker service |
+| **Vulcan-Patterns** | Pattern avanzati | CQRS, SignalR, GraphQL, Feature Flags, caching distribuito, profiling |
 | **Vulcan-AWS** | AWS | Lambda, DynamoDB, SQS, SNS, S3, ECS, API Gateway, CDK |
 | **Vulcan-Azure** | Azure | Functions, Cosmos DB, Service Bus, Container Apps, Key Vault, Bicep |
+| **Vulcan-SCA** | Software Composition Analysis | Scansione/remediation dipendenze NuGet (vulnerabilità, deprecazioni, outdated) |
 
 Ogni agente è completo e auto-sufficiente per il suo target. Scegli l'agente giusto prima di iniziare.
 

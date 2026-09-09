@@ -223,6 +223,8 @@ private async Task WriteUpdatesAsync(
 
 ### Setup
 
+Verificare il nome esatto del metodo (`AddMaxExecutionDepth` o `AddMaxExecutionDepthRule` a seconda della versione) contro la versione di HotChocolate in uso.
+
 ```csharp
 // Program.cs
 builder.Services

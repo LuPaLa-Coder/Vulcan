@@ -509,7 +509,7 @@ install_local() {
 
     mkdir -p "$dest_dir"
 
-    # Installa tutti e cinque gli agenti localmente con frontmatter Claude
+    # Installa tutti e sei gli agenti localmente con frontmatter Claude
     local installed=0
     for agent_file in "${AGENT_FILES[@]}"; do
         local dest="${dest_dir}/${agent_file}"
@@ -535,7 +535,7 @@ install_local() {
     # Template
     copy_templates "$dest_dir"
 
-    # Crea settings.json Claude Code con tutti e cinque gli agenti
+    # Crea settings.json Claude Code con tutti e sei gli agenti
     local settings="${local_dir}/.claude/settings.json"
     if [[ ! -f "$settings" ]]; then
         cat > "$settings" <<'SETTINGS'
@@ -548,6 +548,10 @@ install_local() {
     "Vulcan-Core": {
       "description": "Vulcan-Core C# Agent — sviluppo .NET provider-agnostic",
       "path": ".claude/agents/Vulcan.Core.agent.md"
+    },
+    "Vulcan-Patterns": {
+      "description": "Vulcan-Patterns C# Agent — pattern architetturali avanzati (CQRS, SignalR, GraphQL, caching)",
+      "path": ".claude/agents/Vulcan.Patterns.agent.md"
     },
     "Vulcan-AWS": {
       "description": "Vulcan-AWS C# Agent — sviluppo cloud-native AWS",
