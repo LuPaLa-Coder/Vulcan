@@ -42,10 +42,11 @@ AGENT_FILES=(
 # Agente legacy (v1/v2) da rimuovere in upgrade
 LEGACY_AGENT_FILE="Vulcan.agent.md"
 
-# Estrae la description dal frontmatter YAML del file agente
+# Estrae il valore di un campo dal frontmatter YAML del file agente
 # Prova locale prima, poi scarica da GitHub
-get_agent_description() {
+get_agent_field() {
     local agent_file="$1"
+    local field="$2"
     local src=""
 
     if [[ -f "$SCRIPT_DIR/$agent_file" ]]; then
@@ -70,14 +71,14 @@ get_agent_description() {
         fi
     fi
 
-    # Estrai il valore di 'description:' dal frontmatter YAML (fra i due ---)
-    local desc
-    desc=$(awk '
+    # Estrai il valore di '<field>:' dal frontmatter YAML (fra i due ---)
+    local value
+    value=$(awk -v field="$field" '
       BEGIN { in_frontmatter = 0 }
       /^---$/ { in_frontmatter++; next }
-      in_frontmatter == 1 && /^description:/ {
-        # Rimuovi il prefisso "description: " e le virgolette
-        gsub(/^description: *"?/, ""); gsub(/"?$/, "")
+      in_frontmatter == 1 && $0 ~ "^" field ":" {
+        # Rimuovi il prefisso "<field>: " e le virgolette
+        sub("^" field ": *\"?", ""); gsub(/"?$/, "")
         print
         exit
       }
@@ -88,7 +89,15 @@ get_agent_description() {
         rm -f "$src"
     fi
 
-    echo "$desc"
+    echo "$value"
+}
+
+get_agent_description() {
+    get_agent_field "$1" "description"
+}
+
+get_agent_model() {
+    get_agent_field "$1" "model"
 }
 
 # Template files da installare — vanno in una subdirectory per evitare
@@ -248,7 +257,16 @@ get_frontmatter() {
     short_name=$(get_agent_short_name "$agent_file")
 
     case "$platform" in
-        claude|generic)
+        claude)
+            local model
+            model=$(get_agent_model "$agent_file")
+            echo "---"
+            echo "name: Vulcan-${short_name}"
+            echo "description: \"${desc}\""
+            [[ -n "$model" ]] && echo "model: ${model}"
+            echo "---"
+            ;;
+        generic)
             echo "---"
             echo "name: Vulcan-${short_name}"
             echo "description: \"${desc}\""
