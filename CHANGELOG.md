@@ -18,7 +18,7 @@ Vulcan-Core scende da ~1091 a 642 righe: CQRS, SignalR, GraphQL, Feature Flags, 
 
 ### Enforcement
 - Vulcan-SCA: `tools` ristretto a `["read", "bash"]` — enforcement reale del profilo read-only dichiarato
-- Vulcan-Dispatch: `model` alleggerito a Haiku — routing puro non richiede lo stesso modello della generazione
+- Rimosso il campo `model` da tutti gli agenti Vulcan: il modello lo sceglie l'utente (ereditato dalla sessione)
 
 ### Blocchi condivisi
 Nuova cartella `partials/` con 2 blocchi canonici realmente comuni a Core/AWS/Azure — Guardrail Operativi (i due bullet base) e Profili Operativi (tabella read-only/write) — con `scripts/sync-partials.sh` per la sincronizzazione e un job CI `partials-drift` che blocca la ri-divergenza silenziosa. Vulcan-SCA e Vulcan-Dispatch restano fuori: il loro contenuto guardrail/profili è bespoke per design, non un'estensione del nucleo comune.

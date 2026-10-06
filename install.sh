@@ -96,10 +96,6 @@ get_agent_description() {
     get_agent_field "$1" "description"
 }
 
-get_agent_model() {
-    get_agent_field "$1" "model"
-}
-
 # Template files da installare — vanno in una subdirectory per evitare
 # che OpenCode/Copilot/Cursor li interpretino come agent separati
 TEMPLATE_DIR="vulcan-templates"
@@ -244,7 +240,7 @@ copy_templates() {
 }
 
 # ── Frontmatter per piattaforma ──────────────────────────────────────────────
-# Claude Code: name + description, tools ereditati dall'host
+# Claude Code: name + description, tools e modello ereditati dall'host
 # OpenCode:    description + mode + permission (oggetto con allow/deny per tool)
 # Generico:    name + description (Copilot, Cursor, Windsurf, Codex)
 
@@ -258,12 +254,11 @@ get_frontmatter() {
 
     case "$platform" in
         claude)
-            local model
-            model=$(get_agent_model "$agent_file")
             echo "---"
             echo "name: Vulcan-${short_name}"
             echo "description: \"${desc}\""
-            [[ -n "$model" ]] && echo "model: ${model}"
+            # Dispatch smista soltanto: sola lettura + delega, mai scrittura
+            [[ "$short_name" == "Dispatch" ]] && echo "tools: Read, Grep, Glob, Agent"
             echo "---"
             ;;
         generic)
