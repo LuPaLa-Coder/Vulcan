@@ -6,12 +6,12 @@ Vulcan è una famiglia di **sei agenti specializzati** per lo sviluppo C# e .NET
 
 | Agente | Target | File | Dimensione |
 |---|---|---|---|
-| **Vulcan-Dispatch** | Entry point: rilevamento automatico target (Generic/AWS/Azure) e tipo task (code-gen, SCA) → delega all'agente corretto | `Vulcan.Dispatch.agent.md` | 246 righe, 10.1 KB |
-| **Vulcan-Core** | Provider-agnostic: API REST, Minimal API, gRPC, console, librerie, worker + API versioning, OpenAPI, storage locale/self-managed | `Vulcan.Core.agent.md` | 642 righe, 32.9 KB |
-| **Vulcan-Patterns** | Advanced patterns: CQRS, SignalR, GraphQL, Feature Flags, Caching, Profiling (quando la complessità lo giustifica) | `Vulcan.Patterns.agent.md` | 501 righe, 17.6 KB |
-| **Vulcan-AWS** | AWS cloud-native: Lambda, DynamoDB, SQS, SNS, S3, ECS, CDK + EventBridge Pipes, CloudFront, API GW v2, LocalStack, cdk-nag | `Vulcan.AWS.agent.md` | 680 righe, 34.5 KB |
-| **Vulcan-Azure** | Azure cloud-native: Functions, Cosmos DB, Service Bus, Container Apps, Bicep + Durable Functions, Logic Apps, blue-green, Azurite, PSRule | `Vulcan.Azure.agent.md` | 864 righe, 38.8 KB |
-| **Vulcan-SCA** | Software Composition Analysis per NuGet: vulnerabilità, deprecazioni, outdated package con remediation loop iterativo (max 10 iter) | `Vulcan.SCA.agent.md` | 434 righe, 17.7 KB |
+| **Vulcan-Dispatch** | Entry point: rilevamento automatico target e delega nativa o handoff strutturato | `Vulcan.Dispatch.agent.md` | dimensione verificata dalla CI |
+| **Vulcan-Core** | Provider-agnostic: API REST, Minimal API, gRPC, console, librerie, worker + API versioning, OpenAPI, storage locale/self-managed | `Vulcan.Core.agent.md` | dimensione verificata dalla CI |
+| **Vulcan-Patterns** | Advanced patterns: CQRS, SignalR, GraphQL, Feature Flags, Caching, Profiling (quando la complessità lo giustifica) | `Vulcan.Patterns.agent.md` | dimensione verificata dalla CI |
+| **Vulcan-AWS** | AWS cloud-native: Lambda, DynamoDB, SQS, SNS, S3, ECS, CDK + EventBridge Pipes, CloudFront, API GW v2, LocalStack, cdk-nag | `Vulcan.AWS.agent.md` | dimensione verificata dalla CI |
+| **Vulcan-Azure** | Azure cloud-native: Functions, Cosmos DB, Service Bus, Container Apps, Bicep + Durable Functions, Logic Apps, blue-green, Azurite, PSRule | `Vulcan.Azure.agent.md` | dimensione verificata dalla CI |
+| **Vulcan-SCA** | Software Composition Analysis per NuGet: scansione e coordinamento remediation senza modifiche dirette | `Vulcan.SCA.agent.md` | dimensione verificata dalla CI |
 
 **Unico formato: Agent** — installabile globalmente su tutti i coding agent (Claude Code, OpenCode, GitHub Copilot, Cursor, Windsurf, Codex).
 
@@ -27,12 +27,25 @@ Dopo l'analisi del manifesto Vulcan v2 (47KB monolite), abbiamo identificato che
 - **Pattern avanzati mescolati con CRUD**: complessità nascosta
 
 La soluzione: **sei agenti specializzati, con Dispatch come router**.
-- **Vulcan-Dispatch** (10.1KB): entry point routing → rileva target e task → delega all'agente corretto
-- **Vulcan-Core** (32.9KB): motore decisionale Generic/.NET (setup, architettura, storage, anti-pattern, observability, qualità)
-- **Vulcan-Patterns** (17.6KB): pattern avanzati (CQRS, SignalR, GraphQL, Feature Flags, Caching, Profiling) — quando la complessità lo giustifica
-- **Vulcan-AWS** (34.5KB): AWS cloud-native (Lambda, DynamoDB, CDK, EventBridge, …)
-- **Vulcan-Azure** (38.8KB): Azure cloud-native (Functions, Cosmos DB, Bicep, Durable Functions, …)
-- **Vulcan-SCA** (17.7KB): scansione dipendenze NuGet e remediation loop
+- **Vulcan-Dispatch**: entry point routing → rileva target e task → delega all'agente corretto
+- **Vulcan-Core**: motore decisionale Generic/.NET (setup, architettura, storage, anti-pattern, observability, qualità)
+- **Vulcan-Patterns**: pattern avanzati (CQRS, SignalR, GraphQL, Feature Flags, Caching, Profiling) — quando la complessità lo giustifica
+- **Vulcan-AWS**: AWS cloud-native (Lambda, DynamoDB, CDK, EventBridge, …)
+- **Vulcan-Azure**: Azure cloud-native (Functions, Cosmos DB, Bicep, Durable Functions, …)
+- **Vulcan-SCA**: scansione dipendenze NuGet e coordinamento della remediation
+
+## Capability e delega multipiattaforma
+
+`contracts/host-capabilities.tsv` è la fonte di verità usata dall'installer:
+
+- **Claude Code** e **OpenCode** ricevono delega nativa tramite il tool
+  dichiarato nel `Host Capability Contract`;
+- **GitHub Copilot, Cursor, Windsurf e Codex** ricevono un contratto di
+  **handoff strutturato**: Dispatch e SCA selezionano lo specialista, ma non
+  dichiarano di averlo avviato.
+
+Le regole deterministiche di routing sono in `contracts/routing-rules.tsv`; i
+casi P0 sono eseguiti da `scripts/run-contract-evals.sh` in CI.
 
 ---
 
@@ -156,13 +169,16 @@ Per esempi dettagliati, vedi **[Usage Guide](./docs/usage.md)** e **[Examples](.
 
 ```
 Vulcan/
-├── Vulcan.Dispatch.agent.md      # Entry point routing (v2026.9.8.0)
+├── Vulcan.Dispatch.agent.md      # Entry point routing (v2026.10.7.1)
 ├── Vulcan.Core.agent.md          # Agente Generic/.NET (provider-agnostic)
 ├── Vulcan.Patterns.agent.md      # Agente pattern architetturali avanzati (CQRS, SignalR, GraphQL, …)
 ├── Vulcan.AWS.agent.md           # Agente AWS cloud-native
 ├── Vulcan.Azure.agent.md         # Agente Azure cloud-native
 ├── Vulcan.SCA.agent.md           # Agente SCA per NuGet dependency analysis/remediation
-├── install.sh                    # Script di installazione globale (v3.3.0)
+├── contracts/                    # Capability host e routing machine-readable
+├── evals/                        # Casi di routing eseguibili
+├── install.sh                    # Script di installazione globale (v3.4.1)
+├── scripts/run-contract-evals.sh # Eval P0 di routing, capability e safety
 ├── CHANGELOG.md                  # Storico versioni agenti
 ├── README.md
 └── docs/
@@ -205,7 +221,7 @@ Vulcan/
 
 ## Output
 
-Ogni agente Vulcan genera:
+Gli agenti di generazione Vulcan producono, quando applicabile:
 
 - **Codice C# completo** — classi, interfacce, repository, registrazioni DI
 - **appsettings.json** — configurazione development e production
@@ -240,13 +256,9 @@ Ogni agente Vulcan genera:
 - **[AWS Templates](./docs/vulcan-aws-templates.md)** — Boilerplate Lambda, CDK, Well-Architected
 - **[Azure Templates](./docs/vulcan-azure-templates.md)** — Boilerplate Functions, Bicep, Best Practices
 - **Agenti:**
-  - **[Vulcan-Dispatch](./Vulcan.Dispatch.agent.md)** — Entry point routing (10.1 KB, v2026.9.8.0)
-  - **[Vulcan-Core](./Vulcan.Core.agent.md)** — Motore decisionale Generic/.NET (32.9 KB)
-  - **[Vulcan-Patterns](./Vulcan.Patterns.agent.md)** — Pattern architetturali avanzati (17.6 KB)
-  - **[Vulcan-AWS](./Vulcan.AWS.agent.md)** — Motore decisionale AWS (34.5 KB)
-  - **[Vulcan-Azure](./Vulcan.Azure.agent.md)** — Motore decisionale Azure (38.8 KB)
-  - **[Vulcan-SCA](./Vulcan.SCA.agent.md)** — Software Composition Analysis NuGet (17.7 KB)
-
----
-
-**For information on other agents, see the main [Agents README](../README.md).**
+  - **[Vulcan-Dispatch](./Vulcan.Dispatch.agent.md)** — Entry point routing e capability-aware handoff (v2026.10.7.1)
+  - **[Vulcan-Core](./Vulcan.Core.agent.md)** — Motore decisionale Generic/.NET
+  - **[Vulcan-Patterns](./Vulcan.Patterns.agent.md)** — Pattern architetturali avanzati
+  - **[Vulcan-AWS](./Vulcan.AWS.agent.md)** — Motore decisionale AWS
+  - **[Vulcan-Azure](./Vulcan.Azure.agent.md)** — Motore decisionale Azure
+  - **[Vulcan-SCA](./Vulcan.SCA.agent.md)** — Software Composition Analysis NuGet (v2026.10.7.1)

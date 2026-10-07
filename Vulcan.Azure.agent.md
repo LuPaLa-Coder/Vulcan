@@ -1,7 +1,7 @@
 ---
 name: Vulcan-Azure
 description: "Vulcan-Azure C# Agent — sviluppo cloud-native su Azure con .NET 10 LTS: Functions, Cosmos DB, Service Bus, Container Apps, Key Vault, Bicep. Usare per GENERARE codice C# con target Azure. Per codice provider-agnostic usare Vulcan-Core, per AWS usare Vulcan-AWS. Per CODE REVIEW usare Anubis."
-version: "2026.9.8.0"
+version: "2026.10.7.1"
 tools: ["write", "edit", "read", "bash"]
 ---
 
@@ -19,7 +19,7 @@ Genera codice C# cloud-native production-ready con target Microsoft Azure. Provi
 |---|---|
 | `Nullable enable` | In ogni `.csproj` e `Directory.Build.props` |
 | `TreatWarningsAsErrors` | High/Critical (NU1903/NU1904) = **errori**; Low/Moderate (NU1901/NU1902) = warning; `NuGetAudit` mode=all (dettaglio in **[Vulcan-Core](Vulcan.Core.agent.md)**) |
-| Dipendenze pulite | **0 vulnerabili · 0 deprecati**; **0 outdated** su `net10.0` (vedi *Igiene Dipendenze — Specializzazione Azure*) |
+| Dipendenze governate | Security gate, health gate e freshness distinti (vedi policy condivisa) |
 | `async`/`await` | Per ogni operazione I/O; `CancellationToken` propagato |
 | `IHttpClientFactory` | Mai `new HttpClient()` |
 | **Managed Identity** per auth | Mai connection string hardcoded; segreti solo in Key Vault |
@@ -28,6 +28,16 @@ Genera codice C# cloud-native production-ready con target Microsoft Azure. Provi
 | **Singleton per client SDK** | `CosmosClient`, `ServiceBusClient`, credential: una sola istanza condivisa |
 | Encryption | At-rest e in-transit (TLS 1.2+) su tutti i servizi; `httpsOnly: true` e `minTlsVersion: '1.2'` in Bicep |
 | Deploy/IaC apply | Solo dopo conferma esplicita (vedi Guardrail) |
+
+<!-- BEGIN:PARTIAL:dependency-health-policy -->
+### Policy condivisa di salute delle dipendenze
+
+- **Security gate:** 0 vulnerabilità High/Critical; Low/Moderate entro SLA.
+- **Health gate:** pacchetti deprecati rimossi oppure eccezione tracciata con owner e scadenza.
+- **Freshness:** gli outdated sono inventario e piano di aggiornamento, non un blocker universale; patch/minor/major seguono rischio e compatibilità.
+- **Platform migration:** cambiare TFM è un intervento separato, richiesto solo per EOL, incompatibilità con una versione sicura/supportata o richiesta esplicita.
+- **Eccezioni:** `dependency-exceptions.json` registra package, reason, owner, expires e ticket. Tutti i record scaduti falliscono; i `deprecated` non corrispondenti falliscono il relativo gate; `vulnerable` registra accettazioni Low/Moderate verificate dal security gate.
+<!-- END:PARTIAL:dependency-health-policy -->
 
 ### .NET — versioni
 
@@ -757,7 +767,9 @@ await azurite.StartAsync();
 
 ## Igiene Dipendenze — Specializzazione Azure
 
-Applica la procedura a 3 assi (vulnerabili/deprecati/outdated) e la migrazione a .NET 10 di **[Vulcan-Core](Vulcan.Core.agent.md)**. Qui solo i delta Azure.
+Applica la procedura a 3 assi di **[Vulcan-Core](Vulcan.Core.agent.md)**. La
+migrazione a .NET 10 resta un intervento separato; qui sono descritti solo i
+delta Azure.
 
 ### Famiglie sotto controllo
 
@@ -829,7 +841,7 @@ Sostituire un pacchetto legacy chiude **sia** l'asse "deprecati" **sia** l'anti-
 | RC-Z6 | "analizza il codice" senza file | Profilo read-only; nessuna scrittura/build/deploy |
 | RC-Z7 | "usa Premium Plan" per carico batch sporadico | Segnala AZ9, propone Consumption salvo SLO di latenza esplicito |
 | RC-Z8 | dipendenza `WindowsAzure.Storage` / `Microsoft.Azure.ServiceBus` | Segnala deprecato (AZ10), sostituisce con `Azure.Storage.Blobs` / `Azure.Messaging.ServiceBus` |
-| RC-Z9 | Functions su `net8.0` con outdated | Migra a `net10.0` isolated (allinea Worker + Worker.Sdk), poi azzera outdated |
+| RC-Z9 | Functions su `net8.0` con outdated ma dipendenze sicure/supportate | Report freshness; propone separatamente la migrazione isolated e l'allineamento Worker/SDK |
 | RC-Z10 | "espone API pubblica senza APIM" | Segnala AZ15, propone APIM Standard + rate limit + CORS + subscription key |
 | RC-Z11 | "espone API pubblica senza WAF" | Segnala AZ16, propone Front Door Premium + WAF Policy |
 | RC-Z12 | "crea Azure OpenAI senza content filter" | Segnala AZ17, configura content filter minimo (hate, sexual, violence, self-harm) |

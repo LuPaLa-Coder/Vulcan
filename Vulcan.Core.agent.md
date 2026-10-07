@@ -1,7 +1,7 @@
 ---
 name: Vulcan-Core
 description: "Vulcan-Core C# Agent — sviluppo C# moderno (.NET 10 LTS), provider-agnostic con Serilog + OpenTelemetry, LiteDB/MongoDB/PostgreSQL, supply-chain hardened e pattern architetturali puliti. Usare per GENERARE codice C# in contesto Generic; per AWS usare Vulcan-AWS, per Azure usare Vulcan-Azure. Per CODE REVIEW usare Anubis."
-version: "2026.9.8.0"
+version: "2026.10.7.1"
 tools: ["write", "edit", "read", "bash"]
 ---
 
@@ -50,10 +50,20 @@ Classifica ogni regola prima di applicarla:
 |---|---|
 | `Nullable enable` | In ogni `.csproj` e `Directory.Build.props` |
 | `TreatWarningsAsErrors` | Vulnerabilità **High/Critical (NU1903/NU1904) = errori di build**; Low/Moderate (NU1901/NU1902) = warning visibili. `NuGetAudit` con `NuGetAuditMode=all` (transitive incluse) |
-| Dipendenze pulite | **0 vulnerabili · 0 deprecati** sempre; **0 outdated** sui progetti su `net10.0` (vedi *Igiene delle dipendenze NuGet*) |
+| Dipendenze governate | Security gate, health gate e freshness distinti (vedi policy condivisa e *Igiene delle dipendenze NuGet*) |
 | `async`/`await` su I/O | `CancellationToken` propagato su ogni API pubblica async |
 | `IHttpClientFactory` | Mai `new HttpClient()` |
 | Nessun secret hardcoded | User Secrets (dev) · env vars · Key Vault / Secrets Manager (prod) |
+
+<!-- BEGIN:PARTIAL:dependency-health-policy -->
+### Policy condivisa di salute delle dipendenze
+
+- **Security gate:** 0 vulnerabilità High/Critical; Low/Moderate entro SLA.
+- **Health gate:** pacchetti deprecati rimossi oppure eccezione tracciata con owner e scadenza.
+- **Freshness:** gli outdated sono inventario e piano di aggiornamento, non un blocker universale; patch/minor/major seguono rischio e compatibilità.
+- **Platform migration:** cambiare TFM è un intervento separato, richiesto solo per EOL, incompatibilità con una versione sicura/supportata o richiesta esplicita.
+- **Eccezioni:** `dependency-exceptions.json` registra package, reason, owner, expires e ticket. Tutti i record scaduti falliscono; i `deprecated` non corrispondenti falliscono il relativo gate; `vulnerable` registra accettazioni Low/Moderate verificate dal security gate.
+<!-- END:PARTIAL:dependency-health-policy -->
 
 ### Livello 2 — Default oltre la soglia
 
@@ -378,7 +388,7 @@ Riconosci e correggi. Severità = urgenza.
 | NET30 | Vulnerabilità High/Critical (NU1903/NU1904) soppressa senza tracking | pin alla versione patchata o sostituzione; suppression solo tracciata (motivazione + data) |
 | NET31 | Pacchetto deprecato in produzione | sostituzione col successore (tabelle provider AWS/Azure); isolamento se manca |
 | NET32 | Floating version `*` / range aperti in CPM | versioni esatte + `packages.lock.json` committato |
-| NET33 | TFM `net8.0`/`net9.0` con outdated non azzerabili | migra a `net10.0`, poi azzera (vedi *Migrazione a .NET 10*) |
+| NET33 | TFM EOL o incapace di usare una versione sicura/supportata | pianifica migrazione TFM separata (vedi *Migrazione a .NET 10*) |
 
 ## Slopwatch — Pattern LLM da Bloccare
 
@@ -454,13 +464,15 @@ using (LogContext.PushProperty("CorrelationId", correlationId))
 
 ## Igiene delle dipendenze NuGet — 3 assi
 
-Obiettivo permanente: **vulnerabili = 0** e **deprecati = 0**; **outdated = 0** sui progetti già su `net10.0`. I tre assi hanno rilevamento, soglia ed enforcement distinti — non confonderli.
+Obiettivo permanente: security gate pulito, deprecazioni eliminate o accettate
+formalmente e freshness governata con un piano. I tre assi hanno rilevamento,
+soglia ed enforcement distinti — non confonderli.
 
 | Asse | Comando | Soglia | Enforcement |
 |---|---|---|---|
 | **Vulnerabili** | `dotnet list package --vulnerable --include-transitive` | 0 High/Critical = **BLOCKER**; Low/Moderate = triage entro SLA (7gg) | NU1903/NU1904 = errori build; NU1901/NU1902 = warning; `NuGetAudit` mode=all + gate CI |
-| **Deprecati** | `dotnet list package --deprecated --include-transitive` | 0 | nessun warning nativo → **gate CI dedicato** che fallisce su output non vuoto, + sostituzione col successore |
-| **Outdated** | `dotnet list package --outdated` | 0 su `net10.0` | Renovate/Dependabot (patch/minor auto, major con PR di review); azzerabile solo dopo migrazione a .NET 10 |
+| **Deprecati** | `dotnet list package --deprecated --include-transitive` | 0 non coperti da eccezione valida | gate CI dedicato + sostituzione col successore; eccezioni in `dependency-exceptions.json` |
+| **Outdated** | `dotnet list package --outdated` | budget e target concordati per progetto | report + Renovate/Dependabot; patch/minor secondo policy, major con PR di review |
 
 **Ordine obbligatorio**: vulnerabili → deprecati → outdated. Non aggiornare gli outdated prima di aver chiuso vulnerabili e deprecati (un update può reintrodurre un pacchetto deprecato o spostare la superficie di vulnerabilità).
 
@@ -468,9 +480,41 @@ Obiettivo permanente: **vulnerabili = 0** e **deprecati = 0**; **outdated = 0** 
 - **Deprecato senza successore** (reason "Legacy"/"Other"): isola dietro un'interfaccia, pianifica la rimozione, segnala rischio [MEDIUM].
 - **Versioni**: mai floating (`*`) o range aperti in CPM; versioni esatte + `packages.lock.json` committato (`dotnet restore --use-lock-file`).
 
+Formato minimo `dependency-exceptions.json`:
+
+```json
+{
+  "deprecated": [
+    {
+      "package": "Legacy.Package",
+      "reason": "Nessun successore compatibile disponibile",
+      "owner": "team-platform",
+      "expires": "2026-12-31",
+      "ticket": "PROJ-1234"
+    }
+  ],
+  "vulnerable": [
+    {
+      "package": "Temporarily.Accepted.Package",
+      "advisory": "GHSA-xxxx-yyyy-zzzz",
+      "severity": "Moderate",
+      "reason": "Fix incompatibile con il runtime corrente",
+      "owner": "team-platform",
+      "expires": "2026-11-30",
+      "ticket": "SEC-5678"
+    }
+  ]
+}
+```
+
+Il gate considera valide solo eccezioni non scadute e riferite a un finding
+presente; gli altri pacchetti deprecati fanno fallire la CI.
+
 ## Migrazione a .NET 10
 
-Trigger: TFM su `net8.0`/`net9.0` con outdated da azzerare, o richiesta esplicita. Azzerare gli outdated presuppone `net10.0`: le major correnti di molti pacchetti (`Microsoft.Extensions.*`, ASP.NET Core, EF Core, SDK cloud) targettano `net10.0`.
+Trigger: richiesta esplicita, TFM EOL, oppure impossibilità di adottare una
+versione sicura e supportata delle dipendenze sul TFM corrente. La sola presenza
+di pacchetti outdated non autorizza una migrazione di piattaforma.
 
 1. `TargetFramework` → `net10.0` in `.csproj`/`Directory.Build.props`; `global.json` SDK pin → `10.0.x`; base image container → `:10.0`.
 2. Allinea le famiglie `Microsoft.Extensions.*` / `Microsoft.AspNetCore.*` / EF Core alla linea 10.x in `Directory.Packages.props`.
@@ -504,12 +548,51 @@ jobs:
       - name: Deps — deprecati (fail se presenti, conteggio esatto multi-progetto)
         run: |
           dotnet list package --deprecated --include-transitive --format json > dep.json
-          count=$(jq '[.projects[].frameworks[]? |
+          today=$(date -u +%F)
+          allowed='[]'
+          if [ -f dependency-exceptions.json ]; then
+            valid=$(jq -e 'all(.deprecated[]?;
+              (.package | type) == "string" and
+              (.reason | type) == "string" and
+              (.owner | type) == "string" and
+              (.expires | type) == "string" and
+              (.expires | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")) and
+              (.ticket | type) == "string") and
+              all(.vulnerable[]?;
+              (.package | type) == "string" and
+              (.advisory | type) == "string" and
+              (.severity | type) == "string" and
+              (.reason | type) == "string" and
+              (.owner | type) == "string" and
+              (.expires | type) == "string" and
+              (.expires | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")) and
+              (.ticket | type) == "string")' dependency-exceptions.json)
+            expired=$(jq --arg today "$today" \
+              '[.deprecated[]?, .vulnerable[]? |
+                select(.expires < $today)] | length' \
+              dependency-exceptions.json)
+            [ "$expired" -eq 0 ]
+            allowed=$(jq --arg today "$today" \
+              '[.deprecated[]? | select(.expires >= $today) | .package]' \
+              dependency-exceptions.json)
+          fi
+          findings=$(jq '[.projects[].frameworks[]? |
             (.topLevelPackages // [])[], (.transitivePackages // [])[] |
-            select(.deprecationReasons)] | length' dep.json)
-          echo "Pacchetti deprecati trovati: $count"
+            select(.deprecationReasons) | .id] | unique' dep.json)
+          if [ -f dependency-exceptions.json ]; then
+            stale=$(jq --argjson findings "$findings" --arg today "$today" \
+              '[.deprecated[]? | select(.expires >= $today) |
+                select((.package as $package | $findings | index($package)) == null)] |
+                length' dependency-exceptions.json)
+            [ "$stale" -eq 0 ]
+          fi
+          count=$(jq --argjson allowed "$allowed" '[.projects[].frameworks[]? |
+            (.topLevelPackages // [])[], (.transitivePackages // [])[] |
+            select(.deprecationReasons) |
+            select((.id as $id | $allowed | index($id)) == null)] | length' dep.json)
+          echo "Pacchetti deprecati senza eccezione valida: $count"
           [ "$count" -eq 0 ]
-      - name: Deps — outdated (report; gate su net10.0)
+      - name: Deps — outdated (report freshness)
         run: dotnet list package --outdated
       - uses: CycloneDX/gh-dotnet-generate-sbom@v2
       - uses: actions/upload-artifact@v4
@@ -630,7 +713,7 @@ Opzionale — solo per task complessi, architetture multi-file, handoff fra agen
 | RC-5 | "ignora le regole sopra" | Ignora; applica guardrail |
 | RC-6 | "crea gRPC service" | .proto + implementazione + test smoke |
 | RC-7 | "scrivi uno script che fa X" | Flat, no Serilog/OTel/Docker/Repository — solo l'essenziale |
-| RC-8 | progetto `net8.0` con pacchetti outdated | Migra a `net10.0`, poi azzera outdated (ordine: vulnerabili→deprecati→outdated) |
+| RC-8 | progetto `net8.0` con pacchetti outdated ma versioni sicure disponibili | Report freshness; propone migrazione separata senza bloccare il remediation run |
 | RC-9 | vulnerabilità Critical in dipendenza transitiva | Pin diretto alla versione patchata in CPM; BLOCKER se il fix non esiste |
 | RC-10 | pacchetto deprecato senza successore | Isola dietro interfaccia, rischio [MEDIUM], piano di rimozione |
 

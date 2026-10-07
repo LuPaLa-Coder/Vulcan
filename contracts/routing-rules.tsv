@@ -1,0 +1,13 @@
+kind	route	pattern
+domain	Vulcan-SCA	scan|analizza( i)? pacchetti|controlla( le)? dipendenze|aggiornamento (delle )?dipendenze|dipendenze nuget|vulnerabil|deprecat|outdated|aggiorna dipendenze
+workflow	Vulcan-SCA->Vulcan-Core->Vulcan-SCA	migra.*\.?net[^[:alnum:]]*10|modernizza.*\.?net[^[:alnum:]]*10
+domain	Vulcan-AWS	lambda|function urls|serverless function|dynamodb|documentdb|s3 event|s3 bucket|eventbridge|kinesis|cloudformation|api gateway|fargate|app runner|cloudwatch|x-ray|adot|step functions|secrets manager|cognito|elasticache|cloudfront|dax|(^|[^[:alnum:]_])(s3|sqs|sns|ecs|cdk|sam|iam|kms|alb|nlb)([^[:alnum:]_]|$)
+domain	Vulcan-Azure	function app|azure functions|durable functions|cosmos db|azure sql|table storage|blob storage|queue storage|azure files|service bus|event grid|event hubs|key vault|bicep|container apps|app service|aks|entra id|application insights|azure monitor|log analytics|azd|apim|front door|application gateway|azure openai|semantic kernel|azure\.|microsoft\.azure\.|azure resource manager|arm template|arm deployment
+domain	Vulcan-Patterns	cqrs|event sourcing|signalr|websocket|real-time|graphql|feature flag|cache stampede|distributed cache|benchmark|profiling
+domain	Vulcan-Core	console|api rest|minimal api|grpc|libreria|worker|nuget|docker|postgresql|mongodb|sqlite|sql server|entity framework|dapper
+intent	WRITE	risolvi|aggiorna|remediation|genera|crea|scrivi|aggiungi|scaffold|migra|modernizza|sostituisci|modifica|implementa|refactor|deploy|compila|(^|[^[:alnum:]_])(fix|pin)([^[:alnum:]_]|$)
+intent	MUTATION	genera|crea|scrivi|aggiungi|scaffold|modifica|implementa|refactor|sostituisci|deploy|compila|(^|[^[:alnum:]_])pin([^[:alnum:]_]|$)
+intent	READ_ONLY	analizza|review|audit|ispeziona|valuta|progetta
+policy	DEFAULT	Vulcan-Core
+policy	CLOUD_CONFLICT	CLARIFY
+policy	CLOUD_GENERIC_PATTERN	cloud|serverless

@@ -1,5 +1,50 @@
 # Vulcan Release History
 
+## [2026.10.7.1] - 2026-10-07
+
+### Dependency health proporzionata
+- Separati security gate, health gate e freshness: High/Critical restano
+  blocker, mentre outdated e deprecati residui richiedono policy, owner e piano.
+- La presenza di outdated non forza più la migrazione del TFM; .NET 10 resta un
+  intervento separato per EOL, incompatibilità o richiesta esplicita.
+- Aggiunto il partial condiviso `dependency-health-policy` a Core, AWS, Azure e
+  SCA.
+
+### Vulcan-Patterns
+- `OrderNotifier` usa `TimeProvider` invece di `DateTimeOffset.UtcNow`.
+- La stampede protection usa single-flight con `Lazy<Task<T>>` e rimuove sempre
+  le chiavi completate da `_inflight`.
+- Patterns adotta i partial comuni di guardrail e profili operativi.
+
+### Validazione
+- Aggiunti casi eval per fallback Core e precedenza modernizzazione su segnali
+  cloud.
+- Tutti i sei agenti sono riallineati alla versione `2026.10.7.1`.
+- Installer aggiornato da `3.4.0` a `3.4.1`.
+
+## [2026.10.7.0] - 2026-10-07
+
+### Capability e delega verificabili
+- Aggiunta `contracts/host-capabilities.tsv` come fonte di verità per profilo
+  frontmatter, modalità di delega e tool disponibile sui sei host.
+- L'installer 3.4.0 inietta un `Host Capability Contract` in Dispatch e SCA.
+- Dispatch usa delega nativa su Claude Code/OpenCode e handoff strutturato sugli
+  host dove l'installer non può garantire una primitive di delega.
+
+### Contratti Dispatch e SCA
+- Risolta la contraddizione sulle API generiche: senza segnali cloud il target è
+  Vulcan-Core; la domanda è riservata a segnali AWS/Azure conflittuali.
+- Vulcan-SCA non modifica direttamente file di progetto e non dichiara revert
+  automatici non confermati.
+- High/Critical non vengono mai soppressi automaticamente; uno stallo termina
+  come BLOCKER.
+
+### Eval e CI
+- Aggiunti routing rules e casi P0 machine-readable.
+- Sostituito il placeholder CI con `scripts/run-contract-evals.sh`.
+- Il gate README verifica tutti gli agenti reali e il link checker risolve i
+  link relativamente al documento.
+
 ## [2026.9.8.0] - 2026-09-08
 
 ### Vulcan-Patterns — scorporo reale (non più uno skeleton)

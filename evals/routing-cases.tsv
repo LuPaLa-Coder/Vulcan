@@ -1,0 +1,23 @@
+id	prompt	expected_route	expected_mode
+RC-D1	crea API REST	Vulcan-Core	write
+RC-D2	crea Lambda che processa SQS	Vulcan-AWS	write
+RC-D3	crea Azure Function App con Cosmos DB	Vulcan-Azure	write
+RC-D4	analizza i pacchetti NuGet	Vulcan-SCA	read-only
+RC-D5	risolvi le vulnerabilità NuGet	Vulcan-SCA	write
+RC-D6	crea un servizio che usa Lambda e Azure Functions	CLARIFY	write
+RC-D7	migra progetto a .NET 10	Vulcan-SCA->Vulcan-Core->Vulcan-SCA	write
+RC-D9	genera una libreria C# e poi fai scan	Vulcan-Core->Vulcan-SCA	write
+RC-D10	aggiungi SignalR al progetto	Vulcan-Patterns	write
+RC-D12	crea una Lambda e poi controlla le dipendenze	Vulcan-AWS->Vulcan-SCA	write
+RC-D13	migra progetto a .NET 10 e poi fai scan	Vulcan-SCA->Vulcan-Core->Vulcan-SCA	write
+RC-D14	progetta un sistema di prenotazioni	Vulcan-Core	read-only
+RC-D15	migra una Lambda a .NET 10	Vulcan-SCA->Vulcan-Core->Vulcan-SCA	write
+RC-D16	scrivi le specs per una API REST	Vulcan-Core	write
+RC-D17	analizza una API REST esistente	Vulcan-Core	read-only
+RC-D18	modernizza una Lambda a .NET 10	Vulcan-SCA->Vulcan-Core->Vulcan-SCA	write
+RC-D19	analizza l'impatto di un aggiornamento delle dipendenze	Vulcan-SCA	read-only
+RC-D20	implementa un token bucket rate limiter	Vulcan-Core	write
+RC-D21	crea una state machine per gli ordini	Vulcan-Core	write
+RC-D22	compila per arm e x64	Vulcan-Core	write
+RC-D23	deploya questa API sul cloud	CLARIFY	write
+RC-D24	modifica il servizio e poi fai scan	Vulcan-Core->Vulcan-SCA	write

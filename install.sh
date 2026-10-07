@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-#  Vulcan C# Agent — Global Installer v3.0
-#  Installa Vulcan-Dispatch, Vulcan-Core, Vulcan-AWS, Vulcan-Azure e Vulcan-SCA per tutti i coding agent
+#  Vulcan C# Agent — Global Installer v3.4
+#  Installa i sei agenti Vulcan per tutti i coding agent
 #  rilevati con frontmatter nativo:
 #  Claude Code · OpenCode · GitHub Copilot · Cursor · Windsurf · Codex
 #
@@ -26,8 +26,10 @@ RED='\033[0;31m'   GREEN='\033[0;32m'   YELLOW='\033[1;33m'
 CYAN='\033[0;36m'  BOLD='\033[1m'      NC='\033[0m'
 
 # ── Configurazione ───────────────────────────────────────────────────────────
-VULCAN_VERSION="3.3.0"
+VULCAN_VERSION="3.4.1"
 REPO_URL="https://raw.githubusercontent.com/LuPaLa-Coder/Vulcan/main"
+HOST_CAPABILITIES_FILE="contracts/host-capabilities.tsv"
+SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)}"
 
 # Sei agenti Vulcan — Dispatch, Core (Generic), Patterns (Advanced), AWS, Azure, SCA
 AGENT_FILES=(
@@ -93,7 +95,55 @@ get_agent_field() {
 }
 
 get_agent_description() {
-    get_agent_field "$1" "description"
+    local agent_file="$1"
+    local varname
+    varname=$(get_description_varname "$agent_file")
+    if [[ -n "${!varname:-}" ]]; then
+        echo "${!varname}"
+        return 0
+    fi
+
+    local description
+    description=$(get_agent_field "$agent_file" "description")
+    printf -v "$varname" '%s' "$description"
+    echo "$description"
+}
+
+get_description_varname() {
+    case "$1" in
+        "Vulcan.Dispatch.agent.md") echo "_DESC_DISPATCH" ;;
+        "Vulcan.Core.agent.md") echo "_DESC_CORE" ;;
+        "Vulcan.Patterns.agent.md") echo "_DESC_PATTERNS" ;;
+        "Vulcan.AWS.agent.md") echo "_DESC_AWS" ;;
+        "Vulcan.Azure.agent.md") echo "_DESC_AZURE" ;;
+        "Vulcan.SCA.agent.md") echo "_DESC_SCA" ;;
+    esac
+}
+
+get_agent_version() {
+    local agent_file="$1"
+    local varname
+    varname=$(get_version_varname "$agent_file")
+    if [[ -n "${!varname:-}" ]]; then
+        echo "${!varname}"
+        return 0
+    fi
+
+    local version
+    version=$(get_agent_field "$agent_file" "version")
+    printf -v "$varname" '%s' "$version"
+    echo "$version"
+}
+
+get_version_varname() {
+    case "$1" in
+        "Vulcan.Dispatch.agent.md") echo "_VERSION_DISPATCH" ;;
+        "Vulcan.Core.agent.md") echo "_VERSION_CORE" ;;
+        "Vulcan.Patterns.agent.md") echo "_VERSION_PATTERNS" ;;
+        "Vulcan.AWS.agent.md") echo "_VERSION_AWS" ;;
+        "Vulcan.Azure.agent.md") echo "_VERSION_AZURE" ;;
+        "Vulcan.SCA.agent.md") echo "_VERSION_SCA" ;;
+    esac
 }
 
 # Template files da installare — vanno in una subdirectory per evitare
@@ -112,6 +162,60 @@ _BODY_PATTERNS=""
 _BODY_AWS=""
 _BODY_AZURE=""
 _BODY_SCA=""
+_DESC_DISPATCH=""
+_DESC_CORE=""
+_DESC_PATTERNS=""
+_DESC_AWS=""
+_DESC_AZURE=""
+_DESC_SCA=""
+_VERSION_DISPATCH=""
+_VERSION_CORE=""
+_VERSION_PATTERNS=""
+_VERSION_AWS=""
+_VERSION_AZURE=""
+_VERSION_SCA=""
+_HOST_CAPABILITIES=""
+
+load_host_capabilities() {
+    if [[ -n "$_HOST_CAPABILITIES" ]]; then
+        return 0
+    fi
+
+    if [[ -f "$SCRIPT_DIR/$HOST_CAPABILITIES_FILE" ]]; then
+        _HOST_CAPABILITIES=$(cat "$SCRIPT_DIR/$HOST_CAPABILITIES_FILE")
+    elif command -v curl &>/dev/null; then
+        _HOST_CAPABILITIES=$(curl -fsSL "${REPO_URL}/${HOST_CAPABILITIES_FILE}")
+    elif command -v wget &>/dev/null; then
+        _HOST_CAPABILITIES=$(wget -q "${REPO_URL}/${HOST_CAPABILITIES_FILE}" -O -)
+    else
+        echo "Impossibile caricare ${HOST_CAPABILITIES_FILE}: curl/wget non disponibili." >&2
+        return 1
+    fi
+}
+
+get_host_capability() {
+    local agent_name="$1"
+    local column="$2"
+    load_host_capabilities
+    local value
+    value=$(awk -F '\t' -v agent_name="$agent_name" -v column="$column" '
+      NR > 1 && $2 == agent_name { print $column; exit }
+    ' <<<"$_HOST_CAPABILITIES")
+
+    if [[ -n "$value" ]]; then
+        echo "$value"
+        return 0
+    fi
+
+    case "$column" in
+        3) echo "generic" ;;
+        4) echo "handoff" ;;
+        5) echo "none" ;;
+        6|7|8|9) echo "host-managed" ;;
+        10) echo "true" ;;
+        *) return 1 ;;
+    esac
+}
 
 # Mappa il nome file agente al nome della variabile cache
 get_body_varname() {
@@ -130,7 +234,7 @@ print_banner() {
     echo -e "${CYAN}${BOLD}"
     echo "  ⚡ Vulcan C# Agent — Global Installer v${VULCAN_VERSION}"
     echo -e "${NC}"
-    echo "  C# .NET 10 LTS · Vulcan-Dispatch · Vulcan-Core · Vulcan-AWS · Vulcan-Azure · Vulcan-SCA"
+    echo "  C# .NET 10 LTS · Dispatch · Core · Patterns · AWS · Azure · SCA"
     echo "  Cloud-Native Development Agents"
     echo ""
 }
@@ -245,33 +349,72 @@ copy_templates() {
 # Generico:    name + description (Copilot, Cursor, Windsurf, Codex)
 
 get_frontmatter() {
-    local platform="$1"  # claude | opencode | generic
+    local agent_name="$1"
     local agent_file="$2"
 
-    local desc short_name
+    local desc short_name platform version
+    load_host_capabilities
     desc=$(get_agent_description "$agent_file")
+    version=$(get_agent_version "$agent_file")
     short_name=$(get_agent_short_name "$agent_file")
+    platform=$(get_host_capability "$agent_name" 3)
 
     case "$platform" in
         claude)
             echo "---"
             echo "name: Vulcan-${short_name}"
             echo "description: \"${desc}\""
-            # Dispatch smista soltanto: sola lettura + delega, mai scrittura
+            echo "version: \"${version}\""
             [[ "$short_name" == "Dispatch" ]] && echo "tools: Read, Grep, Glob, Agent"
+            [[ "$short_name" == "SCA" ]] && echo "tools: Read, Grep, Glob, Bash, Agent"
             echo "---"
             ;;
         generic)
             echo "---"
             echo "name: Vulcan-${short_name}"
             echo "description: \"${desc}\""
+            echo "version: \"${version}\""
             echo "---"
             ;;
         opencode)
             echo "---"
             echo "description: \"${desc}\""
+            echo "version: \"${version}\""
             echo "mode: all"
-            cat <<'EOF'
+            if [[ "$short_name" == "Dispatch" ]]; then
+                cat <<'EOF'
+permission:
+  read: allow
+  edit: deny
+  glob: allow
+  grep: allow
+  list: allow
+  bash: deny
+  task: allow
+  webfetch: deny
+  websearch: deny
+  lsp: deny
+  skill: deny
+---
+EOF
+            elif [[ "$short_name" == "SCA" ]]; then
+                cat <<'EOF'
+permission:
+  read: allow
+  edit: deny
+  glob: allow
+  grep: allow
+  list: allow
+  bash: allow
+  task: allow
+  webfetch: deny
+  websearch: deny
+  lsp: deny
+  skill: deny
+---
+EOF
+            else
+                cat <<'EOF'
 permission:
   read: allow
   edit: allow
@@ -286,8 +429,43 @@ permission:
   skill: allow
 ---
 EOF
+            fi
+            ;;
+        *)
+            echo "---"
+            echo "name: Vulcan-${short_name}"
+            echo "description: \"${desc}\""
+            echo "version: \"${version}\""
+            echo "---"
             ;;
     esac
+}
+
+get_host_contract() {
+    local agent_name="$1"
+    local mode tool host_read host_edit host_shell host_network confirmation
+    load_host_capabilities
+    mode=$(get_host_capability "$agent_name" 4)
+    tool=$(get_host_capability "$agent_name" 5)
+    host_read=$(get_host_capability "$agent_name" 6)
+    host_edit=$(get_host_capability "$agent_name" 7)
+    host_shell=$(get_host_capability "$agent_name" 8)
+    host_network=$(get_host_capability "$agent_name" 9)
+    confirmation=$(get_host_capability "$agent_name" 10)
+
+    echo "## Host Capability Contract"
+    echo ""
+    echo "- host: ${agent_name}"
+    echo "- delegation-mode: ${mode}"
+    echo "- delegation-tool: ${tool}"
+    echo "- host-read-capability: ${host_read}"
+    echo "- host-edit-capability: ${host_edit}"
+    echo "- host-shell-capability: ${host_shell}"
+    echo "- host-network-capability: ${host_network}"
+    echo "- confirmation-required: ${confirmation}"
+    echo "- agent-write-policy: denied"
+    echo "- note: agent-specific frontmatter and guardrails can further restrict host capabilities"
+    echo ""
 }
 
 # Estrae il nome breve dell'agente dal filename
@@ -306,10 +484,15 @@ get_agent_short_name() {
 
 # Mappa il nome del coding agent al tipo di piattaforma per il frontmatter
 get_platform() {
+    if [[ -n "$_HOST_CAPABILITIES" ]]; then
+        get_host_capability "$1" 3
+        return
+    fi
+
     case "$1" in
+        "Claude Code") echo "claude" ;;
         "OpenCode") echo "opencode" ;;
-        "Claude Code")               echo "claude" ;;
-        *)                           echo "generic" ;;
+        *) echo "generic" ;;
     esac
 }
 
@@ -403,19 +586,33 @@ install_one_agent() {
     mkdir -p "$target_dir"
     local dest="${target_dir}/${dest_filename}"
 
-    # Backup solo se richiesto esplicitamente con --backup
+    local generated
+    generated=$(mktemp "${target_dir}/.vulcan-${short_name}.XXXXXX")
+    if ! (
+        get_frontmatter "$agent_name" "$agent_file" || exit 1
+        echo "" || exit 1
+        if [[ "$short_name" == "Dispatch" || "$short_name" == "SCA" ]]; then
+            get_host_contract "$agent_name" || exit 1
+        fi
+        get_agent_body "$agent_file" || exit 1
+    ) > "$generated"; then
+        rm -f "$generated"
+        echo -e "  ${RED}✗${NC} Generazione fallita per Vulcan-${short_name} su ${agent_name}"
+        return 1
+    fi
+
     if [[ "$DO_BACKUP" == "true" ]] && [[ -f "$dest" ]]; then
         local backup="${dest}.backup-$(date +%Y%m%d-%H%M%S)"
         cp "$dest" "$backup"
         echo -e "  ${YELLOW}↻${NC} Backup creato: ${backup}"
     fi
 
-    # Genera il file con frontmatter specifico per la piattaforma + corpo
-    {
-        get_frontmatter "$platform" "$agent_file"
-        echo ""
-        get_agent_body "$agent_file"
-    } > "$dest"
+    chmod 0644 "$generated"
+    if ! mv -f "$generated" "$dest"; then
+        rm -f "$generated"
+        echo -e "  ${RED}✗${NC} Installazione atomica fallita per Vulcan-${short_name} su ${agent_name}"
+        return 1
+    fi
 
     if [[ -s "$dest" ]]; then
         echo -e "  ${GREEN}✓${NC} Vulcan-${short_name} installato per ${BOLD}${agent_name}${NC} (${platform})"
@@ -526,16 +723,32 @@ install_local() {
     local installed=0
     for agent_file in "${AGENT_FILES[@]}"; do
         local dest="${dest_dir}/${agent_file}"
+        local short_name
+        short_name=$(get_agent_short_name "$agent_file")
+        local generated
+        generated=$(mktemp "${dest_dir}/.vulcan-${short_name}.XXXXXX")
 
-        {
-            get_frontmatter "claude" "$agent_file"
-            echo ""
-            get_agent_body "$agent_file"
-        } > "$dest"
+        if ! (
+            get_frontmatter "Claude Code" "$agent_file" || exit 1
+            echo "" || exit 1
+            if [[ "$short_name" == "Dispatch" || "$short_name" == "SCA" ]]; then
+                get_host_contract "Claude Code" || exit 1
+            fi
+            get_agent_body "$agent_file" || exit 1
+        ) > "$generated"; then
+            rm -f "$generated"
+            echo -e "  ${RED}✗${NC} Installazione locale fallita per ${agent_file}"
+            return 1
+        fi
+
+        chmod 0644 "$generated"
+        if ! mv -f "$generated" "$dest"; then
+            rm -f "$generated"
+            echo -e "  ${RED}✗${NC} Installazione locale atomica fallita per ${agent_file}"
+            return 1
+        fi
 
         if [[ -s "$dest" ]]; then
-            local short_name
-            short_name=$(get_agent_short_name "$agent_file")
             echo -e "  ${GREEN}✓${NC} Vulcan-${short_name} installato localmente"
             echo -e "          → ${dest}"
             installed=$((installed + 1))
@@ -587,13 +800,13 @@ SETTINGS
 
 # ── Verifica connessione ─────────────────────────────────────────────────────
 check_connectivity() {
-    # Verifica che possiamo ottenere almeno un corpo agente prima di procedere
+    local failed=0
     for agent_file in "${AGENT_FILES[@]}"; do
-        if get_agent_body "$agent_file" > /dev/null 2>&1; then
-            return 0
-        fi
+        get_agent_description "$agent_file" > /dev/null 2>&1 || failed=1
+        get_agent_version "$agent_file" > /dev/null 2>&1 || failed=1
+        get_agent_body "$agent_file" > /dev/null 2>&1 || failed=1
     done
-    return 1
+    return "$failed"
 }
 
 # ── Main ─────────────────────────────────────────────────────────────────────
@@ -601,13 +814,6 @@ main() {
     print_banner
 
     detect_os
-    # Fallback per quando lo script è piped (curl | bash)
-    if [[ -n "${BASH_SOURCE[0]:-}" ]]; then
-        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    else
-        SCRIPT_DIR="$PWD"
-    fi
-
     local mode="install"
     local target_agent=""
     DO_BACKUP="false"
@@ -656,6 +862,7 @@ main() {
                 echo "Agenti Vulcan installati:"
                 echo "  Vulcan-Dispatch — entry point e smistatore automatico"
                 echo "  Vulcan-Core   — sviluppo .NET provider-agnostic"
+                echo "  Vulcan-Patterns — pattern architetturali avanzati"
                 echo "  Vulcan-AWS    — sviluppo cloud-native AWS (Lambda, DynamoDB, SQS, CDK)"
                 echo "  Vulcan-Azure  — sviluppo cloud-native Azure (Functions, Cosmos DB, Service Bus, Bicep)"
                 echo "  Vulcan-SCA    — analisi e remediation dipendenze NuGet"
@@ -669,18 +876,23 @@ main() {
         esac
     done
 
+    if [[ "$mode" != "uninstall" ]] && ! load_host_capabilities; then
+        echo -e "${RED}✗${NC} Impossibile caricare ${HOST_CAPABILITIES_FILE}."
+        exit 1
+    fi
+
     # ── Modalità: Local ──────────────────────────────────────────────────
     if [[ "$mode" == "local" ]]; then
         if [[ -n "$target_agent" ]]; then
             echo -e "${YELLOW}⚠${NC} --local e --agent sono mutualmente esclusivi. --local installa nella directory corrente."
         fi
-        echo -e "${BOLD}Installazione locale di Vulcan (Dispatch + Core + AWS + Azure + SCA)${NC}"
+        echo -e "${BOLD}Installazione locale di Vulcan (Dispatch + Core + Patterns + AWS + Azure + SCA)${NC}"
         echo ""
         install_local
         echo ""
-        echo -e "${GREEN}${BOLD}✓${NC} Vulcan installato localmente (Dispatch + Core + AWS + Azure + SCA)!"
+        echo -e "${GREEN}${BOLD}✓${NC} Vulcan installato localmente (Dispatch + Core + Patterns + AWS + Azure + SCA)!"
         echo ""
-        echo "  Agenti disponibili: Vulcan-Dispatch, Vulcan-Core, Vulcan-AWS, Vulcan-Azure, Vulcan-SCA"
+        echo "  Agenti disponibili: Vulcan-Dispatch, Vulcan-Core, Vulcan-Patterns, Vulcan-AWS, Vulcan-Azure, Vulcan-SCA"
         echo "  Per usarli: seleziona l'agente dal menu quando richiesto."
         exit 0
     fi
@@ -703,7 +915,7 @@ main() {
     fi
 
     # ── Modalità: Install ────────────────────────────────────────────────
-    echo -e "${BOLD}Installazione globale di Vulcan (Dispatch + Core + AWS + Azure + SCA)${NC}"
+    echo -e "${BOLD}Installazione globale di Vulcan (Dispatch + Core + Patterns + AWS + Azure + SCA)${NC}"
     echo -e "  OS rilevato: ${CYAN}${OS}${NC}"
     echo ""
 
@@ -744,7 +956,9 @@ main() {
     fi
 
     echo ""
-    echo -e "${CYAN}${BOLD}Vulcan${NC} — Vulcan-Dispatch · Vulcan-Core · Vulcan-AWS · Vulcan-Azure · Vulcan-SCA. ${BOLD}Ready.${NC}"
+    echo -e "${CYAN}${BOLD}Vulcan${NC} — Vulcan-Dispatch · Vulcan-Core · Vulcan-Patterns · Vulcan-AWS · Vulcan-Azure · Vulcan-SCA. ${BOLD}Ready.${NC}"
 }
 
-main "$@"
+if [[ "${VULCAN_INSTALLER_LIBRARY_ONLY:-false}" != "true" ]]; then
+    main "$@"
+fi

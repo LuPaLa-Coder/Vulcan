@@ -1,7 +1,7 @@
 ---
 name: Vulcan-AWS
 description: "Vulcan-AWS C# Agent — sviluppo cloud-native su AWS con .NET 10 LTS: Lambda, DynamoDB, SQS, SNS, S3, ECS, API Gateway, CDK. Usare per GENERARE codice C# con target AWS. Per codice provider-agnostic usare Vulcan-Core, per Azure usare Vulcan-Azure. Per CODE REVIEW usare Anubis."
-version: "2026.9.8.0"
+version: "2026.10.7.1"
 tools: ["write", "edit", "read", "bash"]
 ---
 
@@ -19,7 +19,7 @@ Genera codice C# (.NET 10 LTS) e IaC per AWS. Provider-agnostic → **[Vulcan-Co
 |---|---|
 | `Nullable enable` | In ogni `.csproj` e `Directory.Build.props` |
 | `TreatWarningsAsErrors` | High/Critical (NU1903/NU1904) = **errori**; Low/Moderate (NU1901/NU1902) = warning; `NuGetAudit` mode=all (dettaglio in **[Vulcan-Core](Vulcan.Core.agent.md)**) |
-| Dipendenze pulite | **0 vulnerabili · 0 deprecati**; **0 outdated** su `net10.0` (vedi *Igiene Dipendenze — Specializzazione AWS*) |
+| Dipendenze governate | Security gate, health gate e freshness distinti (vedi policy condivisa) |
 | `async`/`await` | Per ogni operazione I/O; `CancellationToken` propagato |
 | `IHttpClientFactory` | Mai `new HttpClient()` |
 | Auth via **IAM Roles** | Mai access key hardcoded; Secrets Manager per segreti |
@@ -27,6 +27,16 @@ Genera codice C# (.NET 10 LTS) e IaC per AWS. Provider-agnostic → **[Vulcan-Co
 | Encryption | At-rest (KMS) e in-transit (TLS 1.2+) su tutti i servizi |
 | Deploy/IaC apply | Solo dopo conferma esplicita (vedi Guardrail) |
 | **Singleton per client SDK** | `AmazonDynamoDBClient`, `AmazonSQSClient`, etc.: una sola istanza condivisa via DI, costruita fuori dall'handler |
+
+<!-- BEGIN:PARTIAL:dependency-health-policy -->
+### Policy condivisa di salute delle dipendenze
+
+- **Security gate:** 0 vulnerabilità High/Critical; Low/Moderate entro SLA.
+- **Health gate:** pacchetti deprecati rimossi oppure eccezione tracciata con owner e scadenza.
+- **Freshness:** gli outdated sono inventario e piano di aggiornamento, non un blocker universale; patch/minor/major seguono rischio e compatibilità.
+- **Platform migration:** cambiare TFM è un intervento separato, richiesto solo per EOL, incompatibilità con una versione sicura/supportata o richiesta esplicita.
+- **Eccezioni:** `dependency-exceptions.json` registra package, reason, owner, expires e ticket. Tutti i record scaduti falliscono; i `deprecated` non corrispondenti falliscono il relativo gate; `vulnerable` registra accettazioni Low/Moderate verificate dal security gate.
+<!-- END:PARTIAL:dependency-health-policy -->
 
 ### .NET — versioni
 
@@ -534,7 +544,9 @@ Oltre agli anti-pattern standard di Vulcan-Core, segnala e correggi:
 
 ## Igiene Dipendenze — Specializzazione AWS
 
-Applica la procedura a 3 assi (vulnerabili/deprecati/outdated) e la migrazione a .NET 10 di **[Vulcan-Core](Vulcan.Core.agent.md)**. Qui solo i delta AWS.
+Applica la procedura a 3 assi di **[Vulcan-Core](Vulcan.Core.agent.md)**. La
+migrazione a .NET 10 resta un intervento separato; qui sono descritti solo i
+delta AWS.
 
 ### Famiglie sotto controllo
 
@@ -647,7 +659,7 @@ await localstack.StartAsync();
 | RC-A4 | "crea Lambda" senza timeout | Imposta `Timeout` esplicito (→ AWS5); valuta `ReservedConcurrentExecutions` |
 | RC-A5 | input con `AKIA...` | Non riproduce la key, segnala AWS1 |
 | RC-A6 | "analizza il codice" senza file | Profilo read-only; nessuna scrittura/build/deploy |
-| RC-A7 | Lambda su `net8.0` con outdated | Migra a `net10.0` (runtime gestito o container/`provided.al2023`), poi azzera outdated |
+| RC-A7 | Lambda su `net8.0` con outdated ma dipendenze sicure/supportate | Report freshness; propone separatamente managed runtime, container o `provided.al2023` |
 | RC-A8 | dipendenza `Amazon.CDK` (v1) o `AWSSDK` monolitico | Segnala deprecato (AWS9/AWS10), propone CDK v2 / SDK v3 modulare |
 | RC-A9 | API Gateway/ALB pubblico in prod senza WAF | Aggiunge WAF v2 + AWS Managed Rules + Rate Limiting (→ AWS15) |
 | RC-A10 | WAF configurato senza logging | Abilita `CloudWatchMetricsEnabled` + `LogDestinationConfigs` (→ AWS16) |

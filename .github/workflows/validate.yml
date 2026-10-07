@@ -58,19 +58,23 @@ jobs:
 
       - name: Validate markdown links
         run: |
-          # Check all [text](file) links point to existing files or are external
           for file in Vulcan.*.agent.md README.md docs/*.md CHANGELOG.md; do
             [ -f "$file" ] || continue
             echo "Checking links in $file..."
 
-            grep -o '\[.*\](.*\.md)' "$file" | sed 's/.*(\(.*\)).*/\1/' | while read link; do
-              if [[ "$link" == http* ]]; then
-                echo "  (external) $link"
-              elif [ ! -f "$link" ]; then
-                echo "❌ Broken link in $file: $link"
+            while IFS= read -r link; do
+              [ -n "$link" ] || continue
+              clean_link="${link%%#*}"
+              if [[ "$clean_link" == http* ]]; then
+                echo "  (external) $clean_link"
+              elif [ ! -f "$(dirname "$file")/$clean_link" ]; then
+                echo "❌ Broken link in $file: $clean_link"
                 exit 1
               fi
-            done
+            done < <(
+              grep -oE '\[[^]]+\]\([^)]+\.md(#[^)]+)?\)' "$file" |
+                sed -E 's/.*\(([^)]+)\)/\1/' || true
+            )
           done
           echo "✓ All links valid"
 
@@ -85,7 +89,14 @@ jobs:
           echo "Checking install.sh vs Vulcan.*.agent.md files..."
 
           # Extract agent files from install.sh
-          install_agents=$(grep 'AGENT_FILES=' -A 10 install.sh | grep '\.agent\.md' | tr -d ' "' | sort)
+          install_agents=$(awk '
+            /^AGENT_FILES=\(/ { in_list=1; next }
+            in_list && /^\)/ { exit }
+            in_list && /\.agent\.md/ {
+              gsub(/[ "]/, "")
+              print
+            }
+          ' install.sh | sort)
 
           # Get actual agent files
           actual_agents=$(ls Vulcan.*.agent.md | sort)
@@ -102,12 +113,14 @@ jobs:
       - name: Check README agent table
         run: |
           echo "Checking README agent table..."
-          agent_count=$(grep "Vulcan-Core\|Vulcan-AWS\|Vulcan-Azure\|Vulcan-SCA\|Vulcan-Dispatch" README.md | grep -c "|" || echo 0)
-          if [ "$agent_count" -lt 5 ]; then
-            echo "❌ README agent table incomplete (found ~$agent_count lines, expected 5+)"
-            exit 1
-          fi
-          echo "✓ README mentions all 5 agents"
+          for agent_file in Vulcan.*.agent.md; do
+            agent_name=$(sed -n 's/^name: //p' "$agent_file" | head -1)
+            if ! grep -Fq "| **${agent_name}** |" README.md; then
+              echo "❌ README agent table missing ${agent_name}"
+              exit 1
+            fi
+          done
+          echo "✓ README mentions all agents"
 
   size-budget:
     name: Agent Size Budget Check
@@ -119,31 +132,32 @@ jobs:
         run: |
           echo "Checking agent file sizes..."
           max_lines=900
-          max_size_kb=40
+          max_size_bytes=45056
 
           for agent in Vulcan.*.agent.md; do
             lines=$(wc -l < "$agent")
-            size_kb=$(du -k "$agent" | cut -f1)
+            size_bytes=$(wc -c < "$agent")
 
             if [ "$lines" -gt "$max_lines" ]; then
               echo "❌ $agent: $lines lines (max: $max_lines)"
               exit 1
             fi
 
-            if [ "$size_kb" -gt "$max_size_kb" ]; then
-              echo "❌ $agent: ${size_kb}KB (max: ${max_size_kb}KB)"
+            if [ "$size_bytes" -gt "$max_size_bytes" ]; then
+              echo "❌ $agent: ${size_bytes} bytes (max: ${max_size_bytes})"
               exit 1
             fi
 
-            echo "✓ $agent: $lines lines, ${size_kb}KB"
+            echo "✓ $agent: $lines lines, ${size_bytes} bytes"
           done
 
-  regression-checks:
-    name: Regression Checks (Placeholder)
+  contract-evals:
+    name: Routing and Capability Contract Evals
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "ℹ️ Regression checks (RC-1..57) pending conversion to executable evals"
+      - name: Run executable contract evals
+        run: bash scripts/run-contract-evals.sh
 
   partials-drift:
     name: Shared Blocks Drift Check

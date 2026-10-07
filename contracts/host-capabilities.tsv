@@ -1,0 +1,7 @@
+slug	display_name	frontmatter_profile	delegation_mode	delegation_tool	host_read	host_edit	host_shell	host_network	confirmation_required
+claude	Claude Code	claude	native	Agent	true	true	true	host-managed	true
+opencode	OpenCode	opencode	native	task	true	true	true	true	true
+copilot	GitHub Copilot	generic	handoff	none	host-managed	host-managed	host-managed	host-managed	true
+cursor	Cursor	generic	handoff	none	host-managed	host-managed	host-managed	host-managed	true
+windsurf	Windsurf	generic	handoff	none	host-managed	host-managed	host-managed	host-managed	true
+codex	OpenAI Codex	generic	handoff	none	host-managed	host-managed	host-managed	host-managed	true
