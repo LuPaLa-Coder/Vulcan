@@ -66,6 +66,23 @@ body_of() {
     '
 }
 
+# Stesso blocco di install.sh (get_host_contract), riga "Claude Code" del TSV.
+host_contract() {
+    awk -F'\t' '$2 == "Claude Code" {
+        print "## Host Capability Contract\n"
+        print "- host: Claude Code"
+        print "- delegation-mode: " $4
+        print "- delegation-tool: " $5
+        print "- host-read-capability: " $6
+        print "- host-edit-capability: " $7
+        print "- host-shell-capability: " $8
+        print "- host-network-capability: " $9
+        print "- confirmation-required: " $10
+        print "- agent-write-policy: denied"
+        print "- note: agent-specific frontmatter and guardrails can further restrict host capabilities\n"
+    }' "$ROOT/contracts/host-capabilities.tsv"
+}
+
 build_agent() {
     local src="$ROOT/$1" dest="$AGENTS_DIR/$2" tools="$3"
     local name description version
@@ -86,6 +103,7 @@ build_agent() {
         [[ -n "$tools" ]] && echo "tools: ${tools}"
         echo "---"
         echo ""
+        [[ -n "$tools" ]] && host_contract
         echo "<!-- File generato da scripts/build-plugin.sh — non modificare a mano."
         echo "     Sorgente: $1 (root). -->"
         body_of "$src"

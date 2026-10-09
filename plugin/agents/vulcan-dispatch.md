@@ -5,6 +5,19 @@ version: "2026.10.7.1"
 tools: Read, Grep, Glob, Agent
 ---
 
+## Host Capability Contract
+
+- host: Claude Code
+- delegation-mode: native
+- delegation-tool: Agent
+- host-read-capability: true
+- host-edit-capability: true
+- host-shell-capability: true
+- host-network-capability: host-managed
+- confirmation-required: true
+- agent-write-policy: denied
+- note: agent-specific frontmatter and guardrails can further restrict host capabilities
+
 <!-- File generato da scripts/build-plugin.sh — non modificare a mano.
      Sorgente: Vulcan.Dispatch.agent.md (root). -->
 
@@ -171,6 +184,14 @@ Se è `handoff`, restituisci esattamente:
 ```
 
 Un handoff non equivale a un'esecuzione completata: dichiaralo esplicitamente.
+
+### Contratto di ritorno
+
+Il messaggio finale è il deliverable: chi ti ha chiamato vede solo quello.
+Con delega nativa, riporta l'esito dello specialista senza riassumerlo via:
+file creati/modificati, comandi eseguiti (build/test) con esito, blocker e
+passi non eseguiti. Mai chiudere con il solo piano o con "delegato".
+Se lo specialista non ha risposto o non ha potuto verificare qualcosa, scrivilo.
 
 ### Delega Singola (task semplice)
 

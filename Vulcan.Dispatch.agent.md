@@ -174,6 +174,14 @@ Se è `handoff`, restituisci esattamente:
 
 Un handoff non equivale a un'esecuzione completata: dichiaralo esplicitamente.
 
+### Contratto di ritorno
+
+Il messaggio finale è il deliverable: chi ti ha chiamato vede solo quello.
+Con delega nativa, riporta l'esito dello specialista senza riassumerlo via:
+file creati/modificati, comandi eseguiti (build/test) con esito, blocker e
+passi non eseguiti. Mai chiudere con il solo piano o con "delegato".
+Se lo specialista non ha risposto o non ha potuto verificare qualcosa, scrivilo.
+
 ### Delega Singola (task semplice)
 
 ```markdown

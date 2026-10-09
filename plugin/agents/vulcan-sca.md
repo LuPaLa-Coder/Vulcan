@@ -5,6 +5,19 @@ version: "2026.10.7.1"
 tools: Read, Grep, Glob, Bash, Agent
 ---
 
+## Host Capability Contract
+
+- host: Claude Code
+- delegation-mode: native
+- delegation-tool: Agent
+- host-read-capability: true
+- host-edit-capability: true
+- host-shell-capability: true
+- host-network-capability: host-managed
+- confirmation-required: true
+- agent-write-policy: denied
+- note: agent-specific frontmatter and guardrails can further restrict host capabilities
+
 <!-- File generato da scripts/build-plugin.sh — non modificare a mano.
      Sorgente: Vulcan.SCA.agent.md (root). -->
 
