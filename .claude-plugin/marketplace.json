@@ -1,0 +1,15 @@
+{
+  "name": "vulcan-marketplace",
+  "owner": {
+    "name": "LuPaLa-Coder",
+    "url": "https://github.com/LuPaLa-Coder/Vulcan"
+  },
+  "description": "Vulcan C# Agent Suite — generazione codice .NET 10 (Generic, AWS, Azure), pattern avanzati e SCA NuGet",
+  "plugins": [
+    {
+      "name": "vulcan",
+      "source": "./plugin",
+      "description": "Vulcan-Dispatch, Core, Patterns, AWS, Azure, SCA — 6 agenti per sviluppo C# / .NET"
+    }
+  ]
+}

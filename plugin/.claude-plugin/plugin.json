@@ -1,0 +1,10 @@
+{
+  "name": "vulcan",
+  "description": "Vulcan C# Agent Suite — generazione codice .NET 10 (Generic, AWS, Azure), pattern avanzati e SCA NuGet",
+  "version": "3.4.1",
+  "author": {
+    "name": "LuPaLa-Coder"
+  },
+  "homepage": "https://github.com/LuPaLa-Coder/Vulcan",
+  "repository": "https://github.com/LuPaLa-Coder/Vulcan"
+}
