@@ -2,14 +2,14 @@
 name: Vulcan-Dispatch
 description: "Vulcan-Dispatch — Agente Smistatore: rileva automaticamente il target (Generic/AWS/Azure) e il tipo di task (code-gen, SCA), poi delega all'agente Vulcan specializzato corretto. Usare come entry point predefinito per qualsiasi richiesta .NET."
 version: "2026.10.7.1"
-tools: Read, Grep, Glob, Agent
+tools: Read, Grep, Glob
 ---
 
 ## Host Capability Contract
 
 - host: Claude Code
-- delegation-mode: native
-- delegation-tool: Agent
+- delegation-mode: handoff
+- delegation-tool: none
 - host-read-capability: true
 - host-edit-capability: true
 - host-shell-capability: true
@@ -192,6 +192,20 @@ Con delega nativa, riporta l'esito dello specialista senza riassumerlo via:
 file creati/modificati, comandi eseguiti (build/test) con esito, blocker e
 passi non eseguiti. Mai chiudere con il solo piano o con "delegato".
 Se lo specialista non ha risposto o non ha potuto verificare qualcosa, scrivilo.
+
+**Attesa obbligatoria**: non chiudere mai la turn con un figlio ancora in corso
+(niente "in attesa della notifica"): il figlio resta orfano e il report non
+arriva a chi ti ha chiamato. Il tool `Agent` può lanciare in background senza
+che tu possa attendere. Nel plugin Claude Code non hai quindi il tool `Agent`
+(`delegation-mode: handoff`): scegli il target, restituisci l'handoff
+strutturato e di' al chiamante di spawnare direttamente lo specialista.
+
+### Nomi degli agent
+
+I nomi in questo file (`Vulcan-Core`, `Vulcan-AWS`, ...) sono senza prefisso.
+Se installato come plugin, l'agente registrato è `vulcan:<nome>` (es.
+`vulcan:Vulcan-Core`). Se il nome nudo non esiste, riprova subito con il prefisso
+`vulcan:` prima di ripiegare sull'handoff.
 
 ### Delega Singola (task semplice)
 

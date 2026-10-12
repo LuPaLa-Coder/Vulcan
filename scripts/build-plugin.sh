@@ -35,8 +35,11 @@ DEST_FILE=(
     "vulcan-sca.md"
 )
 # Tools Claude Code per agente (vuoto = ereditati dall'host).
+# Dispatch non ha Agent: il tool Agent lancia in background e Dispatch chiudeva
+# il turno prima del figlio, quindi sceglie il target e restituisce l'handoff.
+# Gli agenti senza Agent nei tools ricevono delegation-mode: handoff.
 TOOLS=(
-    "Read, Grep, Glob, Agent"
+    "Read, Grep, Glob"
     ""
     ""
     ""
@@ -68,7 +71,9 @@ body_of() {
 
 # Stesso blocco di install.sh (get_host_contract), riga "Claude Code" del TSV.
 host_contract() {
-    awk -F'\t' '$2 == "Claude Code" {
+    local mode_override="${1:-}"
+    awk -F'\t' -v ovr="$mode_override" '$2 == "Claude Code" {
+        if (ovr == "handoff") { $4 = "handoff"; $5 = "none" }
         print "## Host Capability Contract\n"
         print "- host: Claude Code"
         print "- delegation-mode: " $4
@@ -103,7 +108,9 @@ build_agent() {
         [[ -n "$tools" ]] && echo "tools: ${tools}"
         echo "---"
         echo ""
-        [[ -n "$tools" ]] && host_contract
+        if [[ -n "$tools" ]]; then
+            if [[ "$tools" == *Agent* ]]; then host_contract; else host_contract handoff; fi
+        fi
         echo "<!-- File generato da scripts/build-plugin.sh — non modificare a mano."
         echo "     Sorgente: $1 (root). -->"
         body_of "$src"

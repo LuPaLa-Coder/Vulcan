@@ -182,6 +182,20 @@ file creati/modificati, comandi eseguiti (build/test) con esito, blocker e
 passi non eseguiti. Mai chiudere con il solo piano o con "delegato".
 Se lo specialista non ha risposto o non ha potuto verificare qualcosa, scrivilo.
 
+**Attesa obbligatoria**: non chiudere mai la turn con un figlio ancora in corso
+(niente "in attesa della notifica"): il figlio resta orfano e il report non
+arriva a chi ti ha chiamato. Il tool `Agent` può lanciare in background senza
+che tu possa attendere. Nel plugin Claude Code non hai quindi il tool `Agent`
+(`delegation-mode: handoff`): scegli il target, restituisci l'handoff
+strutturato e di' al chiamante di spawnare direttamente lo specialista.
+
+### Nomi degli agent
+
+I nomi in questo file (`Vulcan-Core`, `Vulcan-AWS`, ...) sono senza prefisso.
+Se installato come plugin, l'agente registrato è `vulcan:<nome>` (es.
+`vulcan:Vulcan-Core`). Se il nome nudo non esiste, riprova subito con il prefisso
+`vulcan:` prima di ripiegare sull'handoff.
+
 ### Delega Singola (task semplice)
 
 ```markdown

@@ -328,7 +328,9 @@ Il blocco `Host Capability Contract` installato insieme all'agente determina il
 comportamento:
 
 - `delegation-mode: native`: invia il pacchetto di correzione a
-  Vulcan-Core/AWS/Azure e attendi l'esito;
+  Vulcan-Core/AWS/Azure e attendi l'esito nella stessa turn (foreground, mai
+  in background). Se il nome nudo non esiste, riprova con il prefisso plugin
+  `vulcan:` (es. `vulcan:Vulcan-Core`);
 - `delegation-mode: handoff` o capability assente: produci il pacchetto seguente
   e fermati. Non dichiarare la modifica applicata.
 
