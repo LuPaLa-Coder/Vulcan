@@ -213,6 +213,10 @@ private async Task WriteUpdatesAsync(
 | SIG4 | Nessun cleanup in `OnDisconnectedAsync` | Rimuovere da Groups, rilasciare risorse |
 | SIG5 | String interpolation per group/user ID | Costanti tipizzate o `nameof()` |
 
+## Esecuzione ordinata di transizioni (ON/OFF, flap)
+
+`Task.Run` per ogni transizione non garantisce l'ordine: su flap ravvicinati un OFF può superare l'ON precedente. Usa un esecutore seriale: `Channel<T>` (`SingleReader = true`) drenato da un solo `BackgroundService`, così le transizioni girano nell'ordine di arrivo. Se serve coalescere i flap, scarta le transizioni superate prima di eseguire, mai dopo.
+
 ---
 
 ## GraphQL — HotChocolate

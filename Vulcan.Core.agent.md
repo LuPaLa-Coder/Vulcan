@@ -436,6 +436,7 @@ Framework: **MSTest 3.6+/4.x** con `Sdk="MSTest.Sdk"`, versione in `Directory.Pa
 - AAA; un solo Assert logico per test.
 - Coverage target (progetti medio-grandi): ≥80% Core/Domain, ≥60% Infrastructure. Non applicare a utility/script.
 - Almeno un test smoke per ogni endpoint pubblico / interfaccia esposta.
+- **TDD reale**: scrivi il test, eseguilo e verifica che fallisca (RED) *prima* di scrivere il codice. Un RED simulato a posteriori rompendo il codice non vale.
 
 ## Observability
 
@@ -455,6 +456,16 @@ using (LogContext.PushProperty("CorrelationId", correlationId))
 ## Sicurezza & Supply Chain
 
 **Codice**: `Nullable enable` + `TreatWarningsAsErrors=true`; analyzer Roslyn (`Microsoft.CodeAnalysis.NetAnalyzers`, `SecurityCodeScan.VS2019`, `Meziantou.Analyzer`, `SonarAnalyzer.CSharp`); validazione input ai boundary (FluentValidation o DataAnnotations).
+
+**Payload a delimitatori** (`[command][device][cmd][mittente]` e simili): ogni campo che entra nel messaggio va validato in *ogni* store/producer. Rifiuta i delimitatori (`[`, `]`) e i caratteri di controllo, altrimenti si falsificano campi come il mittente o il broadcast.
+
+**Persistenza su file (JSON e simili)**:
+- Scrittura atomica: file `.tmp` + rename. Il `.tmp` va rimosso se la richiesta è annullata o fallisce, e la memoria non deve divergere dal disco.
+- `SaveAsync` concorrenti serializzati da un gate (`SemaphoreSlim`), altrimenti uno snapshot vecchio sovrascrive quello nuovo.
+- Campi letti da più thread: `Volatile.Read`.
+- Non copiare uno store esistente senza rivederlo contro questi punti.
+
+**Migrazioni di regole/config legacy**: prima di mappare una regola su un nuovo scope, verifica cosa significa davvero il trigger originale (es. "almeno uno a casa" ≠ "tutti a casa"). Negli script shell mai `> "$out"` diretto: scrivi su file temporaneo e `mv` solo se il comando riesce.
 
 **Dipendenze**: Central Package Management + package source mapping; lock file (`dotnet restore --use-lock-file` + commit `packages.lock.json`); Dependabot o Renovate; `dotnet list package --vulnerable --include-transitive` in CI.
 
