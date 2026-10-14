@@ -1,7 +1,7 @@
 ---
 name: Vulcan-Patterns
 description: "Vulcan-Patterns C# Agent — Specialized patterns for advanced .NET architectures: CQRS, SignalR, GraphQL, Feature Flags, Distributed Caching, Performance Profiling. Usare quando il problema richiede pattern arcitetturali avanzati (non per CRUD semplice). Delega base a Vulcan-Core per setup/storage/anti-pattern."
-version: "2026.10.7.1"
+version: "2026.10.14.0"
 ---
 
 <!-- File generato da scripts/build-plugin.sh — non modificare a mano.

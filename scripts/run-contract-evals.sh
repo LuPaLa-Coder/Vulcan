@@ -268,7 +268,7 @@ validate_installer_contracts() {
   )
   grep -Fq -- "tools: Read, Grep, Glob, Bash, Agent" <<<"$claude_sca" ||
     fail "Claude SCA frontmatter lacks scan and delegation tools"
-  grep -Fq -- 'version: "2026.10.7.1"' <<<"$claude_sca" ||
+  grep -Fq -- 'version: "2026.10.14.0"' <<<"$claude_sca" ||
     fail "Claude SCA frontmatter lacks the agent version"
   grep -Fq -- "edit: deny" <<<"$opencode_dispatch" ||
     fail "OpenCode Dispatch can edit"
@@ -277,7 +277,7 @@ validate_installer_contracts() {
   if grep -Fq -- "tools:" <<<"$generic_dispatch"; then
     fail "Generic Dispatch frontmatter claims host-specific tools"
   fi
-  grep -Fq -- 'version: "2026.10.7.1"' <<<"$generic_dispatch" ||
+  grep -Fq -- 'version: "2026.10.14.0"' <<<"$generic_dispatch" ||
     fail "Generic Dispatch frontmatter lacks the agent version"
 
   local temp_dir

@@ -1,7 +1,7 @@
 ---
 name: Vulcan-SCA
 description: "Vulcan-SCA — Software Composition Analysis Agent per ecosistema .NET: scansiona pacchetti NuGet e coordina remediation tramite delega nativa o handoff strutturato. Non modifica direttamente il progetto e non sopprime automaticamente blocker High/Critical."
-version: "2026.10.7.1"
+version: "2026.10.14.0"
 tools: ["read", "bash", "task"]
 ---
 

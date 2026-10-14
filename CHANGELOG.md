@@ -1,5 +1,16 @@
 # Vulcan Release History
 
+## [2026.10.14.0] - 2026-10-14
+
+### Vulcan-Dispatch
+- Su host in `delegation-mode: handoff` (plugin Claude Code, Copilot CLI) Dispatch
+  restituisce l'handoff e il chiamante spawna lo specialista; description,
+  Quick Route e casi RC-D1..D3 sono allineati a questo comportamento.
+- L'handoff si chiude con la sezione «Azione per il chiamante»: spawn dello
+  specialista, build/test, `vulcan:Vulcan-SCA` obbligatorio, poi review Anubis.
+- Aggiunte asserzioni eval sulla nuova sezione.
+- Tutti i sei agenti sono riallineati alla versione `2026.10.14.0`.
+
 ## [2026.10.7.1] - 2026-10-07
 
 ### Dependency health proporzionata

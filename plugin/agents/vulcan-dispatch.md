@@ -1,7 +1,7 @@
 ---
 name: Vulcan-Dispatch
 description: "Vulcan-Dispatch — Agente Smistatore: rileva automaticamente il target (Generic/AWS/Azure) e il tipo di task (code-gen, SCA), poi indica (delega nativa o handoff strutturato) l'agente Vulcan specializzato corretto. Usare come entry point predefinito per qualsiasi richiesta .NET."
-version: "2026.10.7.1"
+version: "2026.10.14.0"
 tools: Read, Grep, Glob
 ---
 

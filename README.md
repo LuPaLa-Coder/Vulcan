@@ -169,7 +169,7 @@ Per esempi dettagliati, vedi **[Usage Guide](./docs/usage.md)** e **[Examples](.
 
 ```
 Vulcan/
-├── Vulcan.Dispatch.agent.md      # Entry point routing (v2026.10.7.1)
+├── Vulcan.Dispatch.agent.md      # Entry point routing (v2026.10.14.0)
 ├── Vulcan.Core.agent.md          # Agente Generic/.NET (provider-agnostic)
 ├── Vulcan.Patterns.agent.md      # Agente pattern architetturali avanzati (CQRS, SignalR, GraphQL, …)
 ├── Vulcan.AWS.agent.md           # Agente AWS cloud-native
@@ -256,9 +256,9 @@ Gli agenti di generazione Vulcan producono, quando applicabile:
 - **[AWS Templates](./docs/vulcan-aws-templates.md)** — Boilerplate Lambda, CDK, Well-Architected
 - **[Azure Templates](./docs/vulcan-azure-templates.md)** — Boilerplate Functions, Bicep, Best Practices
 - **Agenti:**
-  - **[Vulcan-Dispatch](./Vulcan.Dispatch.agent.md)** — Entry point routing e capability-aware handoff (v2026.10.7.1)
+  - **[Vulcan-Dispatch](./Vulcan.Dispatch.agent.md)** — Entry point routing e capability-aware handoff (v2026.10.14.0)
   - **[Vulcan-Core](./Vulcan.Core.agent.md)** — Motore decisionale Generic/.NET
   - **[Vulcan-Patterns](./Vulcan.Patterns.agent.md)** — Pattern architetturali avanzati
   - **[Vulcan-AWS](./Vulcan.AWS.agent.md)** — Motore decisionale AWS
   - **[Vulcan-Azure](./Vulcan.Azure.agent.md)** — Motore decisionale Azure
-  - **[Vulcan-SCA](./Vulcan.SCA.agent.md)** — Software Composition Analysis NuGet (v2026.10.7.1)
+  - **[Vulcan-SCA](./Vulcan.SCA.agent.md)** — Software Composition Analysis NuGet (v2026.10.14.0)
