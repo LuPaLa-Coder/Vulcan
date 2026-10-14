@@ -616,7 +616,7 @@ copilot /agent Vulcan
 
 - **Learn more**: See [Usage Guide](./usage.md)
 - **Troubleshoot**: Check [Installation Guide](./installation.md)
-- **Get help**: Review main [README](./README.md)
+- **Get help**: Review main [README](../README.md)
 
 Happy coding! 🚀
 
