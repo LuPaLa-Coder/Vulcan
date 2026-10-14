@@ -218,6 +218,8 @@ validate_agent_contracts() {
 validate_installer_contracts() {
   assert_contains install.sh "contracts/host-capabilities.tsv"
   assert_contains install.sh "Host Capability Contract"
+  installer_version=$(sed -n 's/^VULCAN_VERSION="\(.*\)"/\1/p' install.sh)
+  assert_contains plugin/.claude-plugin/plugin.json "\"version\": \"$installer_version\""
   assert_contains install.sh "delegation-mode:"
 
   local native_contract handoff_contract

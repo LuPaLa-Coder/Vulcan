@@ -10,6 +10,8 @@
   specialista, build/test, `vulcan:Vulcan-SCA` obbligatorio, poi review Anubis.
 - Aggiunte asserzioni eval sulla nuova sezione.
 - Tutti i sei agenti sono riallineati alla versione `2026.10.14.0`.
+- Installer e plugin Claude Code portati da `3.4.1` a `3.4.2`: la versione del
+  plugin è quella mostrata dall'host, gli agenti restano su versione a data.
 
 ## [2026.10.7.1] - 2026-10-07
 

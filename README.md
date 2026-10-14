@@ -177,7 +177,7 @@ Vulcan/
 ├── Vulcan.SCA.agent.md           # Agente SCA per NuGet dependency analysis/remediation
 ├── contracts/                    # Capability host e routing machine-readable
 ├── evals/                        # Casi di routing eseguibili
-├── install.sh                    # Script di installazione globale (v3.4.1)
+├── install.sh                    # Script di installazione globale (v3.4.2)
 ├── scripts/run-contract-evals.sh # Eval P0 di routing, capability e safety
 ├── CHANGELOG.md                  # Storico versioni agenti
 ├── README.md
