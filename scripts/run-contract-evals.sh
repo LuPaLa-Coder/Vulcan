@@ -181,6 +181,8 @@ validate_routing_rules() {
 validate_agent_contracts() {
   assert_contains Vulcan.Dispatch.agent.md "Segnali provider-agnostic o nessun segnale cloud"
   assert_contains Vulcan.Dispatch.agent.md "handoff strutturato"
+  assert_contains Vulcan.Dispatch.agent.md "### Azione per il chiamante"
+  assert_contains Vulcan.Dispatch.agent.md 'spawnare `vulcan:Vulcan-SCA` (obbligatorio'
   assert_not_contains Vulcan.Dispatch.agent.md \
     '| RC-D6 | "crea API" senza target cloud | Chiede: "AWS, Azure o provider-agnostic?" |'
 

@@ -135,7 +135,7 @@ Per la guida completa, vedi **[Installation Guide](./docs/installation.md)** .
 
 ## Come Usare Vulcan
 
-**Entry point consigliato: seleziona sempre Vulcan-Dispatch.** L'agente rileva automaticamente il target e il tipo di task, poi delega all'agente specializzato.
+**Entry point consigliato: seleziona sempre Vulcan-Dispatch.** L'agente rileva automaticamente il target e il tipo di task, poi delega (o restituisce un handoff strutturato, secondo l'host) all'agente specializzato.
 
 Alternativamente, seleziona l'agente specifico se conosci il target:
    - **Vulcan-Dispatch** per qualsiasi task .NET (routing intelligente) ← **CONSIGLIATO**
