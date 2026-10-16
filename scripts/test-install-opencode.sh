@@ -27,13 +27,17 @@ if [[ -e "$templates_dir" ]]; then
     exit 1
 fi
 
-mkdir -p "$home_dir/.claude"
-HOME="$home_dir" \
-XDG_CONFIG_HOME="$xdg_config_dir" \
-"$script_dir/install.sh" --agent claude
-
-templates_dir="$home_dir/.claude/agents/vulcan-templates"
-if [[ -e "$templates_dir" ]]; then
-    echo "Claude Code installation unexpectedly created $templates_dir" >&2
+# Claude Code e Copilot CLI passano dal plugin: install.sh deve rifiutarli
+# senza scrivere nulla nei loro profili.
+mkdir -p "$home_dir/.claude" "$home_dir/.copilot"
+for rejected in claude copilot; do
+    if HOME="$home_dir" XDG_CONFIG_HOME="$xdg_config_dir" \
+        "$script_dir/install.sh" --agent "$rejected" >/dev/null 2>&1; then
+        echo "install.sh --agent $rejected should be rejected (plugin only)" >&2
+        exit 1
+    fi
+done
+if [[ -e "$home_dir/.claude/agents" || -e "$home_dir/.copilot/agents" ]]; then
+    echo "install.sh wrote into Claude Code / Copilot profiles" >&2
     exit 1
 fi

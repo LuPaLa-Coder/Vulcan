@@ -13,7 +13,7 @@ Vulcan è una famiglia di **sei agenti specializzati** per lo sviluppo C# e .NET
 | **Vulcan-Azure** | Azure cloud-native: Functions, Cosmos DB, Service Bus, Container Apps, Bicep + Durable Functions, Logic Apps, blue-green, Azurite, PSRule | `Vulcan.Azure.agent.md` | dimensione verificata dalla CI |
 | **Vulcan-SCA** | Software Composition Analysis per NuGet: scansione e coordinamento remediation senza modifiche dirette | `Vulcan.SCA.agent.md` | dimensione verificata dalla CI |
 
-**Unico formato: Agent** — installabile globalmente su tutti i coding agent (Claude Code, OpenCode, GitHub Copilot, Cursor, Windsurf, Codex).
+**Unico formato: Agent** — installabile come plugin (Claude Code, Copilot CLI) o con script (OpenCode, Cursor, Windsurf, Codex).
 
 ---
 
@@ -36,7 +36,7 @@ La soluzione: **sei agenti specializzati, con Dispatch come router**.
 
 ## Capability e delega multipiattaforma
 
-`contracts/host-capabilities.tsv` è la fonte di verità usata dall'installer:
+`contracts/host-capabilities.tsv` è la fonte di verità usata da installer e plugin:
 
 - **Claude Code** e **OpenCode** ricevono delega nativa tramite il tool
   dichiarato nel `Host Capability Contract`;
@@ -68,66 +68,47 @@ casi P0 sono eseguiti da `scripts/run-contract-evals.sh` in CI.
 
 ## Installazione
 
-### One-Liner Globale (tutti gli agent)
+| Tool | Metodo |
+|------|--------|
+| Claude Code | Plugin |
+| Copilot CLI | Plugin |
+| OpenCode, Cursor, Windsurf, Codex | `install.sh` |
+
+`install.sh` non gestisce Claude Code né Copilot CLI: usarli insieme al plugin duplica gli agenti.
+
+### Plugin (Claude Code, Copilot CLI)
+
+```
+# Claude Code
+/plugin marketplace add LuPaLa-Coder/Vulcan
+/plugin install vulcan@vulcan-marketplace
+```
+
+```bash
+# Copilot CLI
+copilot plugin marketplace add LuPaLa-Coder/Vulcan
+copilot plugin install vulcan@vulcan-marketplace
+```
+
+Il plugin installa tutti e sei gli agenti. Aggiornamento: `/plugin update` (Claude Code) o `copilot plugin update vulcan`.
+
+### Script (OpenCode, Cursor, Windsurf, Codex)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/LuPaLa-Coder/Vulcan/main/install.sh | bash
 ```
 
-Lo script installa **tutti i sei agenti** (Vulcan-Dispatch, Vulcan-Core, Vulcan-Patterns, Vulcan-AWS, Vulcan-Azure, Vulcan-SCA) in ogni coding agent rilevato.
-
-### Opzioni di Installazione
+Installa **tutti i sei agenti** (Vulcan-Dispatch, Vulcan-Core, Vulcan-Patterns, Vulcan-AWS, Vulcan-Azure, Vulcan-SCA) in ogni tool rilevato. Da checkout:
 
 ```bash
-# Solo per Claude Code
-./install.sh --agent claude
-
-# Solo per OpenCode
-./install.sh --agent opencode
-
-# Solo per GitHub Copilot (VS Code / CLI)
-./install.sh --agent copilot
-
-# Solo per Cursor
-./install.sh --agent cursor
-
-# Solo per Windsurf
-./install.sh --agent windsurf
-
-# Solo per Codex (OpenAI)
-./install.sh --agent codex
-
-# Solo nella directory corrente (project-local)
-./install.sh --local
-
-# Disinstallazione
-./install.sh --uninstall
+./install.sh --agent opencode   # opencode | cursor | windsurf | codex
+./install.sh --backup           # backup dei file esistenti
+./install.sh --uninstall        # rimuove gli agenti installati dallo script
 ```
 
-### Installazione Manuale
+Non copiare i file `Vulcan.*.agent.md` a mano: il frontmatter e il blocco `Host Capability Contract` vengono generati dall'installer (o dal plugin) per ogni host.
 
-Copia i file agent nella directory del tuo tool:
-
-| Tool | Directory Agent |
-|------|----------------|
-| **Claude Code** | `~/.claude/agents/` |
-| **OpenCode** | `~/.opencode/agents/` |
-| **GitHub Copilot** | `~/.copilot/agents/` |
-| **Cursor** | `~/.cursor/agents/` |
-| **Windsurf** | `~/.windsurf/agents/` |
-| **Codex (OpenAI)** | `~/.codex/agents/` |
-
-```bash
-# Esempio per Claude Code
-cp Vulcan.Dispatch.agent.md ~/.claude/agents/
-cp Vulcan.Core.agent.md ~/.claude/agents/
-cp Vulcan.Patterns.agent.md ~/.claude/agents/
-cp Vulcan.AWS.agent.md ~/.claude/agents/
-cp Vulcan.Azure.agent.md ~/.claude/agents/
-cp Vulcan.SCA.agent.md ~/.claude/agents/
-```
-
-Dopo l'installazione, tutti e sei gli agenti appaiono nel menu agenti: **Vulcan-Dispatch** (entry point), **Vulcan-Core**, **Vulcan-Patterns**, **Vulcan-AWS**, **Vulcan-Azure** e **Vulcan-SCA**.
+Dopo l'installazione tutti e sei gli agenti appaiono nel menu agenti: **Vulcan-Dispatch** (entry point), **Vulcan-Core**, **Vulcan-Patterns**, **Vulcan-AWS**, **Vulcan-Azure** e **Vulcan-SCA**.
 
 Per la guida completa, vedi **[Installation Guide](./docs/installation.md)** .
 

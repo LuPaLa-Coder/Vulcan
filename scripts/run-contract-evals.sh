@@ -135,7 +135,12 @@ validate_capabilities() {
         fail "Invalid host capability for $slug: $capability"
     done
     [[ "$confirm" == "true" ]] || fail "Confirmation policy must be true for $slug"
-    assert_contains install.sh "\"$display\""
+    # Claude Code e Copilot CLI passano dal plugin (build-plugin.sh), gli altri da install.sh.
+    case "$slug" in
+      claude) assert_contains scripts/build-plugin.sh "\"$display\"" ;;
+      copilot) ;;
+      *) assert_contains install.sh "\"$display\"" ;;
+    esac
   done < contracts/host-capabilities.tsv
   [[ "$rows" -eq 6 ]] || fail "Expected 6 host capability rows, found $rows"
 }
@@ -247,13 +252,8 @@ validate_installer_contracts() {
     fail "Copilot handoff contract unexpectedly exposes a tool"
 
   local claude_sca opencode_dispatch generic_dispatch
-  claude_sca=$(
-    VULCAN_INSTALLER_LIBRARY_ONLY=true bash -c '
-      source ./install.sh
-      SCRIPT_DIR=$PWD
-      get_frontmatter "Claude Code" "Vulcan.SCA.agent.md"
-    '
-  )
+  # Frontmatter Claude Code: generato da build-plugin.sh, non più da install.sh.
+  claude_sca=$(sed -n '1,/^---$/p;' plugin/agents/vulcan-sca.md | head -8)
   opencode_dispatch=$(
     VULCAN_INSTALLER_LIBRARY_ONLY=true bash -c '
       source ./install.sh
@@ -282,19 +282,18 @@ validate_installer_contracts() {
   grep -Fq -- 'version: "2026.10.14.0"' <<<"$generic_dispatch" ||
     fail "Generic Dispatch frontmatter lacks the agent version"
 
-  local temp_dir
-  temp_dir=$(mktemp -d)
-  if ! (cd "$temp_dir" && bash "$REPO_ROOT/install.sh" --local >/dev/null); then
-    fail "Local installer smoke test failed"
-  else
-    grep -Fq -- "- delegation-mode: native" \
-      "$temp_dir/.claude/agents/Vulcan.Dispatch.agent.md" ||
-      fail "Installed Dispatch lacks native delegation contract"
-    grep -Fq -- "tools: Read, Grep, Glob, Bash, Agent" \
-      "$temp_dir/.claude/agents/Vulcan.SCA.agent.md" ||
-      fail "Installed SCA lacks required Claude tools"
-  fi
-  rm -rf "$temp_dir"
+  grep -Fq -- "- delegation-mode: handoff" plugin/agents/vulcan-dispatch.md ||
+    fail "Plugin Dispatch lacks handoff delegation contract"
+  grep -Fq -- "tools: Read, Grep, Glob, Bash, Agent" plugin/agents/vulcan-sca.md ||
+    fail "Plugin SCA lacks required Claude tools"
+
+  # install.sh non deve più gestire Claude Code né Copilot CLI (plugin).
+  local rejected
+  for rejected in claude copilot; do
+    if bash "$REPO_ROOT/install.sh" --agent "$rejected" >/dev/null 2>&1; then
+      fail "install.sh accepts --agent $rejected, which is plugin-only"
+    fi
+  done
 }
 
 validate_medium_priority_contracts() {

@@ -1,199 +1,172 @@
 # Vulcan Installation Guide
 
-## One-Liner Global Install (Recommended)
+Installa i sei agenti Vulcan (Dispatch, Core, Patterns, AWS, Azure, SCA).
 
-Installa tutti e quattro gli agenti Vulcan (Core, AWS, Azure, SCA) automaticamente su ogni coding agent rilevato:
+## Quale metodo per quale tool
+
+| Tool | Metodo |
+|------|--------|
+| Claude Code | Plugin |
+| Copilot CLI | Plugin |
+| OpenCode | `install.sh` |
+| Cursor, Windsurf, Codex | `install.sh` |
+
+`install.sh` non gestisce Claude Code né Copilot CLI (rifiuta `--agent claude` e `--agent copilot`): avendo il plugin, una seconda installazione via script duplica gli agenti.
+
+## Plugin — Claude Code e Copilot CLI
+
+Il repository è anche un marketplace (`.claude-plugin/marketplace.json` → `plugin/`).
+
+Claude Code:
+
+```
+/plugin marketplace add LuPaLa-Coder/Vulcan
+/plugin install vulcan@vulcan-marketplace
+```
+
+Copilot CLI:
+
+```bash
+copilot plugin marketplace add LuPaLa-Coder/Vulcan
+copilot plugin install vulcan@vulcan-marketplace
+```
+
+Il plugin installa tutti e sei gli agenti, senza filtro per singolo agente. Aggiornamento: `/plugin update` (Claude Code) o `copilot plugin update vulcan`.
+
+Provare un checkout locale prima di pubblicare (Claude Code):
+
+```bash
+claude --plugin-dir ./plugin
+```
+
+I file in `plugin/agents/` sono generati dai `Vulcan.*.agent.md` in root da `scripts/build-plugin.sh`: rieseguirlo dopo ogni modifica a un agente.
+
+## Script — OpenCode, Cursor, Windsurf, Codex
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/LuPaLa-Coder/Vulcan/main/install.sh | bash
 ```
 
 Lo script:
-1. Rileva automaticamente quali coding agent hai installato
-2. Copia `Vulcan.Core.agent.md`, `Vulcan.AWS.agent.md`, `Vulcan.Azure.agent.md`, `Vulcan.SCA.agent.md` nella directory agent corretta
-3. Rimuove automaticamente l'agente legacy `Vulcan.agent.md` (v1/v2) se presente
-4. Crea un backup se usi l'opzione `--backup`
+1. Rileva i coding agent installati (OpenCode, Cursor, Windsurf, Codex)
+2. Genera per ciascuno i sei agenti con il frontmatter nativo e, per Dispatch e SCA, il blocco `Host Capability Contract` ricavato da `contracts/host-capabilities.tsv`
+3. Rimuove l'agente legacy `Vulcan.agent.md` (v1/v2) se presente
+4. Crea un backup con `--backup`
 
-I template AWS e Azure sono esempi opzionali e non vengono copiati automaticamente nelle directory degli agenti.
-
-## Installazione Selettiva
+Installazione selettiva da checkout:
 
 ```bash
-# Prima clona il repo
 git clone https://github.com/LuPaLa-Coder/Vulcan.git
 cd Vulcan
 
-# Solo per Claude Code
-./install.sh --agent claude
-
-# Solo per OpenCode
-./install.sh --agent opencode
-
-# Solo per GitHub Copilot (VS Code / CLI)
-./install.sh --agent copilot
-
-# Solo per Cursor
-./install.sh --agent cursor
-
-# Solo per Windsurf
-./install.sh --agent windsurf
-
-# Solo per OpenAI Codex
-./install.sh --agent codex
-
-# Project-local (solo directory corrente)
-./install.sh --local
-```
-
-## Disinstallazione
-
-```bash
+./install.sh --agent opencode   # opencode | cursor | windsurf | codex
+./install.sh --backup
 ./install.sh --uninstall
 ```
 
-## Installazione Manuale
+| Tool | Directory agent | Nome file |
+|------|-----------------|-----------|
+| OpenCode | `~/.config/opencode/agents/` | `vulcan-core.md`, … (lowercase) |
+| Cursor | `~/.cursor/agents/` | `Vulcan.Core.agent.md`, … |
+| Windsurf | `~/.windsurf/agents/` | `Vulcan.Core.agent.md`, … |
+| Codex | `~/.codex/agents/` | `Vulcan.Core.agent.md`, … |
 
-Copia i tre file agent nella directory del tuo coding tool:
+Cursor e Windsurf sono rilevati solo se esiste già la cartella `agents/`; per OpenCode `--agent opencode` la crea.
 
-| Tool | Directory Agent |
-|------|----------------|
-| **Claude Code** | `~/.claude/agents/` |
-| **OpenCode** | `~/.opencode/agents/` |
-| **GitHub Copilot** | `~/.copilot/agents/` |
-| **Cursor** | `~/.cursor/agents/` |
-| **Windsurf** | `~/.windsurf/agents/` |
-| **Codex (OpenAI)** | `~/.codex/agents/` |
-| **Project-local** | `.claude/agents/` nella root del progetto |
+Non copiare a mano i file `Vulcan.*.agent.md`: senza il frontmatter e il contratto generati dall'installer l'host non sa se può delegare. I template cloud (`docs/vulcan-aws-templates.md`, `docs/vulcan-azure-templates.md`) restano nel repository; non metterli nelle cartelle `agents/` (OpenCode scansiona ricorsivamente e li registrerebbe come agenti).
+
+## Verifica
 
 ```bash
-# Linux/macOS — Claude Code
-cp Vulcan.Core.agent.md ~/.claude/agents/
-cp Vulcan.AWS.agent.md ~/.claude/agents/
-cp Vulcan.Azure.agent.md ~/.claude/agents/
-cp Vulcan.SCA.agent.md ~/.claude/agents/
+# Claude Code
+claude plugin list | grep vulcan
 
-# Linux/macOS — GitHub Copilot
-cp Vulcan.Core.agent.md ~/.copilot/agents/
-cp Vulcan.AWS.agent.md ~/.copilot/agents/
-cp Vulcan.Azure.agent.md ~/.copilot/agents/
-cp Vulcan.SCA.agent.md ~/.copilot/agents/
+# Copilot CLI
+copilot plugin list | grep vulcan
 
-# Windows — Claude Code
-copy Vulcan.Core.agent.md %USERPROFILE%\.claude\agents\
-copy Vulcan.AWS.agent.md %USERPROFILE%\.claude\agents\
-copy Vulcan.Azure.agent.md %USERPROFILE%\.claude\agents\
-copy Vulcan.SCA.agent.md %USERPROFILE%\.claude\agents\
+# OpenCode
+ls ~/.config/opencode/agents | grep vulcan
 ```
 
-Dopo l'installazione, **Vulcan-Core**, **Vulcan-AWS**, **Vulcan-Azure** e **Vulcan-SCA** appaiono nel dropdown/menu degli agenti del tuo coding tool.
+Poi apri il tool e seleziona **Vulcan-Dispatch** (Claude Code: `vulcan:Vulcan-Dispatch`).
 
-### Copia Template (opzionale ma consigliato)
+## Migrazione da un'installazione via script
+
+Le versioni precedenti installavano in `~/.claude/agents/` e `~/.copilot/agents/` (`Vulcan.*.agent.md`). Con il plugin quei file vanno rimossi, altrimenti ogni agente compare due volte:
 
 ```bash
-mkdir -p ~/.claude/agents/vulcan-templates
-cp docs/vulcan-aws-templates.md ~/.claude/agents/vulcan-templates/
-cp docs/vulcan-azure-templates.md ~/.claude/agents/vulcan-templates/
+rm ~/.claude/agents/Vulcan.{Dispatch,Core,Patterns,AWS,Azure,SCA}.agent.md
+rm ~/.copilot/agents/Vulcan.{Dispatch,Core,Patterns,AWS,Azure,SCA}.agent.md
 ```
 
-## Prerequisites
+Se avevi copiato i template in `~/.claude/agents/vulcan-templates/`, rimuovi anche quella cartella.
 
-### Required
-- **Un coding agent compatibile**: Claude Code, OpenCode, GitHub Copilot, Cursor, Windsurf, o Codex
-- **.NET SDK 10.0+** (LTS, GA novembre 2025)
-  ```bash
-  dotnet --version
-  ```
-- **Git** (per clonare il repo, opzionale con install via curl)
+## Prerequisiti
 
-### Recommended
-- **Docker** (per testing containerizzato)
-- **AWS CLI** (se usi Vulcan-AWS)
-- **Azure CLI** (se usi Vulcan-Azure)
+### Richiesti
+- **Un coding agent compatibile**: Claude Code, Copilot CLI, OpenCode, Cursor, Windsurf o Codex
+- **.NET SDK 10.0+** (`dotnet --version`)
+- **Git** (solo per clonare il repo)
 
-## Cloud Setup (Optional)
+### Consigliati
+- **Docker** (testing containerizzato)
+- **AWS CLI** (Vulcan-AWS) · **Azure CLI** (Vulcan-Azure)
 
-### AWS Setup (per Vulcan-AWS)
+## Cloud Setup (opzionale)
 
 ```bash
+# AWS (Vulcan-AWS)
 aws configure
 npm install -g aws-cdk
-```
 
-### Azure Setup (per Vulcan-Azure)
-
-```bash
+# Azure (Vulcan-Azure)
 az login
 az bicep install
 ```
 
-## Verifica
-
-Verifica che gli agenti Vulcan siano installati:
-
-```bash
-# Claude Code
-ls -la ~/.claude/agents/Vulcan.Core.agent.md
-ls -la ~/.claude/agents/Vulcan.AWS.agent.md
-ls -la ~/.claude/agents/Vulcan.Azure.agent.md
-ls -la ~/.claude/agents/Vulcan.SCA.agent.md
-
-# GitHub Copilot
-ls -la ~/.copilot/agents/Vulcan.Core.agent.md
-ls -la ~/.copilot/agents/Vulcan.AWS.agent.md
-ls -la ~/.copilot/agents/Vulcan.Azure.agent.md
-ls -la ~/.copilot/agents/Vulcan.SCA.agent.md
-```
-
-Poi apri il tuo coding tool e seleziona l'agente Vulcan appropriato dal menu.
-
 ## Quick Test
 
-1. Apri il tuo coding tool e seleziona **Vulcan-Core** dal menu agent
-2. Richiedi un semplice endpoint:
-   ```
-   Crea un API endpoint C# per ottenere dati utente
-   ```
-3. Vulcan-Core genera il codice completo
-
-4. Prova anche **Vulcan-AWS**:
-   ```
-   Crea una Lambda function con DynamoDB
-   ```
-5. E **Vulcan-Azure**:
-   ```
-   Crea una Azure Function con Cosmos DB
-   ```
+1. Seleziona **Vulcan-Dispatch** (o direttamente **Vulcan-Core**) dal menu agent
+2. Richiedi: `Crea un API endpoint C# per ottenere dati utente`
+3. Prova **Vulcan-AWS**: `Crea una Lambda function con DynamoDB`
+4. Prova **Vulcan-Azure**: `Crea una Azure Function con Cosmos DB`
 
 ## Troubleshooting
 
 ### Agenti non appaiono nel menu
 
-- Verifica che i file siano nella directory corretta
+- Plugin: `claude plugin list` / `copilot plugin list` deve mostrare `vulcan@vulcan-marketplace` abilitato
+- Script: verifica che i file siano nella directory agent del tool
 - Riavvia il coding tool
-- Controlla che i nomi file siano esattamente `Vulcan.Core.agent.md`, `Vulcan.AWS.agent.md`, `Vulcan.Azure.agent.md`, `Vulcan.SCA.agent.md`
+
+### Agenti duplicati
+
+Plugin e vecchia installazione via script coesistono: vedi *Migrazione* sopra.
 
 ### "Quale agente Vulcan devo usare?"
 
+- **Vulcan-Dispatch**: entry point, sceglie il target
 - **Vulcan-Core**: API generiche, console app, librerie, gRPC — nessun cloud specifico
+- **Vulcan-Patterns**: CQRS, SignalR, GraphQL, caching, profiling
 - **Vulcan-AWS**: Lambda, DynamoDB, S3, SQS, SNS, ECS, CDK
 - **Vulcan-Azure**: Functions, Cosmos DB, Service Bus, Container Apps, Bicep
 - **Vulcan-SCA**: vulnerabilità, deprecazioni e outdated package NuGet con remediation loop
 
 ### Il codice generato non compila
 
-- Assicurati di avere .NET 10.0+ installato: `dotnet --version`
-- Esegui `dotnet restore` nella directory del progetto generato
-- Controlla il target framework nei file `.csproj`
+- Verifica .NET 10.0+: `dotnet --version`
+- Esegui `dotnet restore` nella directory del progetto
+- Controlla il target framework nei `.csproj`
 
 ### Connessione ai servizi cloud fallita
 
 - Verifica le credenziali (`aws configure`, `az login`)
-- Controlla i permessi del servizio (IAM per AWS, RBAC per Azure)
+- Controlla i permessi (IAM per AWS, RBAC per Azure)
 - Assicurati che il servizio esista nel tuo account/subscription
 
 ### Migrazione da Vulcan v2 (legacy)
 
-Se avevi installato `Vulcan.agent.md` (v1/v2), l'installer v3.1 lo rimuove automaticamente. I quattro nuovi agenti sostituiscono completamente il vecchio agente unificato. Se vuoi mantenere il vecchio agente, rinominalo prima di eseguire l'installer.
+L'installer rimuove automaticamente `Vulcan.agent.md` (v1/v2). I sei agenti attuali sostituiscono completamente il vecchio agente unificato.
 
 ---
 

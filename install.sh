@@ -1,17 +1,14 @@
 #!/usr/bin/env bash
 # =============================================================================
 #  Vulcan C# Agent — Global Installer v3.4
-#  Installa i sei agenti Vulcan per tutti i coding agent
-#  rilevati con frontmatter nativo:
-#  Claude Code · OpenCode · GitHub Copilot · Cursor · Windsurf · Codex
+#  Installa i sei agenti Vulcan per i coding agent rilevati senza plugin:
+#  OpenCode · Cursor · Windsurf · Codex
+#  Claude Code e Copilot CLI: usa il plugin (vedi README), non questo script.
 #
 #  Uso:
 #    curl -fsSL https://raw.githubusercontent.com/LuPaLa-Coder/Vulcan/main/install.sh | bash
 #    ./install.sh                    # installa in tutti gli agent rilevati
-#    ./install.sh --local            # installa solo nella directory corrente
-#    ./install.sh --agent claude     # installa solo per Claude Code
 #    ./install.sh --agent opencode   # installa solo per OpenCode
-#    ./install.sh --agent copilot    # installa solo per GitHub Copilot
 #    ./install.sh --agent cursor     # installa solo per Cursor
 #    ./install.sh --agent windsurf   # installa solo per Windsurf
 #    ./install.sh --agent codex      # installa solo per Codex
@@ -303,9 +300,8 @@ get_agent_body() {
 }
 
 # ── Frontmatter per piattaforma ──────────────────────────────────────────────
-# Claude Code: name + description, tools e modello ereditati dall'host
 # OpenCode:    description + mode + permission (oggetto con allow/deny per tool)
-# Generico:    name + description (Copilot, Cursor, Windsurf, Codex)
+# Generico:    name + description (Cursor, Windsurf, Codex)
 
 get_frontmatter() {
     local agent_name="$1"
@@ -319,15 +315,6 @@ get_frontmatter() {
     platform=$(get_host_capability "$agent_name" 3)
 
     case "$platform" in
-        claude)
-            echo "---"
-            echo "name: Vulcan-${short_name}"
-            echo "description: \"${desc}\""
-            echo "version: \"${version}\""
-            [[ "$short_name" == "Dispatch" ]] && echo "tools: Read, Grep, Glob, Agent"
-            [[ "$short_name" == "SCA" ]] && echo "tools: Read, Grep, Glob, Bash, Agent"
-            echo "---"
-            ;;
         generic)
             echo "---"
             echo "name: Vulcan-${short_name}"
@@ -449,7 +436,6 @@ get_platform() {
     fi
 
     case "$1" in
-        "Claude Code") echo "claude" ;;
         "OpenCode") echo "opencode" ;;
         *) echo "generic" ;;
     esac
@@ -464,21 +450,9 @@ get_agent_dirs() {
 
     case "$OS" in
         macos|linux)
-            if [[ -z "$agent" || "$agent" == "claude" ]]; then
-                if command -v claude &>/dev/null || [[ -d "$HOME/.claude" ]]; then
-                    printf '%s|%s\n' "$HOME/.claude/agents" "Claude Code"
-                fi
-            fi
-
             if [[ -z "$agent" || "$agent" == "opencode" ]]; then
                 if [[ -d "$xdg_config/opencode/agents" || ( "$agent" == "opencode" && "$create_missing" == "true" ) ]]; then
                     printf '%s|%s\n' "$xdg_config/opencode/agents" "OpenCode"
-                fi
-            fi
-
-            if [[ -z "$agent" || "$agent" == "copilot" ]]; then
-                if [[ -d "$HOME/.copilot" ]]; then
-                    printf '%s|%s\n' "$HOME/.copilot/agents" "GitHub Copilot"
                 fi
             fi
 
@@ -504,14 +478,8 @@ get_agent_dirs() {
         windows)
             local appdata="${APPDATA:-$HOME/AppData/Roaming}"
 
-            if [[ -z "$agent" || "$agent" == "claude" ]]; then
-                printf '%s|%s\n' "$appdata/Claude/agents" "Claude Code"
-            fi
             if [[ -z "$agent" || "$agent" == "opencode" ]]; then
                 printf '%s|%s\n' "$appdata/opencode/agents" "OpenCode"
-            fi
-            if [[ -z "$agent" || "$agent" == "copilot" ]]; then
-                printf '%s|%s\n' "$HOME/.copilot/agents" "GitHub Copilot"
             fi
             if [[ -z "$agent" || "$agent" == "cursor" ]]; then
                 printf '%s|%s\n' "$appdata/Cursor/agents" "Cursor"
@@ -529,7 +497,7 @@ get_agent_dirs() {
 # ── Installa un singolo agente ────────────────────────────────────────────────
 install_one_agent() {
     local target_dir="$1"
-    local agent_name="$2"       # es. "Claude Code"
+    local agent_name="$2"       # es. "OpenCode"
     local agent_file="$3"       # es. "Vulcan.Core.agent.md"
     local platform
     platform=$(get_platform "$agent_name")
@@ -669,89 +637,6 @@ uninstall_agent() {
     fi
 }
 
-# ── Local Install ────────────────────────────────────────────────────────────
-install_local() {
-    local local_dir="${1:-$PWD}"
-    local dest_dir="${local_dir}/.claude/agents"
-
-    mkdir -p "$dest_dir"
-
-    # Installa tutti e sei gli agenti localmente con frontmatter Claude
-    local installed=0
-    for agent_file in "${AGENT_FILES[@]}"; do
-        local dest="${dest_dir}/${agent_file}"
-        local short_name
-        short_name=$(get_agent_short_name "$agent_file")
-        local generated
-        generated=$(mktemp "${dest_dir}/.vulcan-${short_name}.XXXXXX")
-
-        if ! (
-            get_frontmatter "Claude Code" "$agent_file" || exit 1
-            echo "" || exit 1
-            if [[ "$short_name" == "Dispatch" || "$short_name" == "SCA" ]]; then
-                get_host_contract "Claude Code" || exit 1
-            fi
-            get_agent_body "$agent_file" || exit 1
-        ) > "$generated"; then
-            rm -f "$generated"
-            echo -e "  ${RED}✗${NC} Installazione locale fallita per ${agent_file}"
-            return 1
-        fi
-
-        chmod 0644 "$generated"
-        if ! mv -f "$generated" "$dest"; then
-            rm -f "$generated"
-            echo -e "  ${RED}✗${NC} Installazione locale atomica fallita per ${agent_file}"
-            return 1
-        fi
-
-        if [[ -s "$dest" ]]; then
-            echo -e "  ${GREEN}✓${NC} Vulcan-${short_name} installato localmente"
-            echo -e "          → ${dest}"
-            installed=$((installed + 1))
-        else
-            echo -e "  ${RED}✗${NC} Installazione locale fallita per ${agent_file}"
-            return 1
-        fi
-    done
-
-    # Crea settings.json Claude Code con tutti e sei gli agenti
-    local settings="${local_dir}/.claude/settings.json"
-    if [[ ! -f "$settings" ]]; then
-        cat > "$settings" <<'SETTINGS'
-{
-  "agents": {
-    "Vulcan-Dispatch": {
-      "description": "Vulcan-Dispatch — entry point e smistatore automatico",
-      "path": ".claude/agents/Vulcan.Dispatch.agent.md"
-    },
-    "Vulcan-Core": {
-      "description": "Vulcan-Core C# Agent — sviluppo .NET provider-agnostic",
-      "path": ".claude/agents/Vulcan.Core.agent.md"
-    },
-    "Vulcan-Patterns": {
-      "description": "Vulcan-Patterns C# Agent — pattern architetturali avanzati (CQRS, SignalR, GraphQL, caching)",
-      "path": ".claude/agents/Vulcan.Patterns.agent.md"
-    },
-    "Vulcan-AWS": {
-      "description": "Vulcan-AWS C# Agent — sviluppo cloud-native AWS",
-      "path": ".claude/agents/Vulcan.AWS.agent.md"
-    },
-    "Vulcan-Azure": {
-      "description": "Vulcan-Azure C# Agent — sviluppo cloud-native Azure",
-      "path": ".claude/agents/Vulcan.Azure.agent.md"
-    },
-    "Vulcan-SCA": {
-      "description": "Vulcan-SCA — analisi e remediation NuGet dependencies",
-      "path": ".claude/agents/Vulcan.SCA.agent.md"
-    }
-  }
-}
-SETTINGS
-        echo -e "  ${GREEN}✓${NC} Creato .claude/settings.json con registrazione agenti"
-    fi
-}
-
 # ── Verifica connessione ─────────────────────────────────────────────────────
 check_connectivity() {
     local failed=0
@@ -779,10 +664,6 @@ main() {
                 mode="uninstall"
                 shift
                 ;;
-            --local)
-                mode="local"
-                shift
-                ;;
             --backup)
                 DO_BACKUP="true"
                 shift
@@ -790,25 +671,33 @@ main() {
             --agent)
                 target_agent="${2:-}"
                 if [[ -z "$target_agent" ]]; then
-                    echo -e "${RED}✗${NC} Specifica un agent: claude, opencode, copilot, cursor, windsurf, codex"
+                    echo -e "${RED}✗${NC} Specifica un agent: opencode, cursor, windsurf, codex"
                     exit 1
                 fi
+                case "$target_agent" in
+                    opencode|cursor|windsurf|codex) ;;
+                    claude|copilot)
+                        echo -e "${RED}✗${NC} ${target_agent}: usa il plugin (README, sezione Installazione), non install.sh"
+                        exit 1
+                        ;;
+                    *)
+                        echo -e "${RED}✗${NC} Agent sconosciuto: ${target_agent} (supportati: opencode, cursor, windsurf, codex)"
+                        exit 1
+                        ;;
+                esac
                 shift 2
                 ;;
             --help|-h)
-                echo "Uso: $0 [--local] [--agent <name>] [--backup] [--uninstall] [--help]"
+                echo "Uso: $0 [--agent <name>] [--backup] [--uninstall] [--help]"
                 echo ""
                 echo "Opzioni:"
-                echo "  --local            Installa solo nella directory corrente"
                 echo "  --agent <name>     Installa solo per un agent specifico"
                 echo "  --backup           Crea backup dei file agent esistenti prima di sovrascrivere"
                 echo "  --uninstall        Rimuove Vulcan da tutti gli agent"
                 echo "  --help, -h         Mostra questo help"
                 echo ""
-                echo "Agent supportati:"
-                echo "  claude    — Claude Code"
+                echo "Agent supportati (Claude Code e Copilot CLI: plugin, vedi README):"
                 echo "  opencode  — OpenCode"
-                echo "  copilot   — GitHub Copilot (VS Code / CLI)"
                 echo "  cursor    — Cursor"
                 echo "  windsurf  — Windsurf"
                 echo "  codex     — OpenAI Codex"
@@ -833,22 +722,6 @@ main() {
     if [[ "$mode" != "uninstall" ]] && ! load_host_capabilities; then
         echo -e "${RED}✗${NC} Impossibile caricare ${HOST_CAPABILITIES_FILE}."
         exit 1
-    fi
-
-    # ── Modalità: Local ──────────────────────────────────────────────────
-    if [[ "$mode" == "local" ]]; then
-        if [[ -n "$target_agent" ]]; then
-            echo -e "${YELLOW}⚠${NC} --local e --agent sono mutualmente esclusivi. --local installa nella directory corrente."
-        fi
-        echo -e "${BOLD}Installazione locale di Vulcan (Dispatch + Core + Patterns + AWS + Azure + SCA)${NC}"
-        echo ""
-        install_local
-        echo ""
-        echo -e "${GREEN}${BOLD}✓${NC} Vulcan installato localmente (Dispatch + Core + Patterns + AWS + Azure + SCA)!"
-        echo ""
-        echo "  Agenti disponibili: Vulcan-Dispatch, Vulcan-Core, Vulcan-Patterns, Vulcan-AWS, Vulcan-Azure, Vulcan-SCA"
-        echo "  Per usarli: seleziona l'agente dal menu quando richiesto."
-        exit 0
     fi
 
     # ── Modalità: Uninstall ──────────────────────────────────────────────
@@ -899,14 +772,10 @@ main() {
         echo -e "${YELLOW}${BOLD}⚠${NC} Nessun coding agent rilevato sul sistema."
         echo ""
         echo "  Installa uno dei seguenti e ri-esegui questo script:"
-        echo "    • Claude Code:   https://claude.ai/code"
         echo "    • OpenCode:      https://github.com/opencode-ai/opencode"
-        echo "    • GitHub Copilot: https://github.com/features/copilot"
         echo "    • Cursor:        https://cursor.sh"
         echo "    • Windsurf:      https://codeium.com/windsurf"
         echo "    • Codex:         https://openai.com/codex"
-        echo ""
-        echo "  Per installazione locale usa: $0 --local"
     fi
 
     echo ""
