@@ -146,13 +146,8 @@ get_version_varname() {
     esac
 }
 
-# Template files da installare — vanno in una subdirectory per evitare
-# che OpenCode/Copilot/Cursor li interpretino come agent separati
+# Directory legacy rimossa durante la disinstallazione delle vecchie installazioni.
 TEMPLATE_DIR="vulcan-templates"
-TEMPLATE_FILES=(
-    "vulcan-aws-templates.md"
-    "vulcan-azure-templates.md"
-)
 
 # Cache per i corpi degli agenti (scaricati/letti una volta sola)
 # Sei variabili invece di array associativo per compatibilità POSIX
@@ -305,42 +300,6 @@ get_agent_body() {
     fi
 
     echo "$body"
-}
-
-# ── Template Files ───────────────────────────────────────────────────────────
-# Copia i file template (AWS, Azure) nella directory dell'agente.
-# Prova prima dal repo locale (docs/), poi scarica da GitHub.
-
-copy_templates() {
-    local target_dir="$1"
-    local tmpl_dir="${target_dir}/${TEMPLATE_DIR}"
-    mkdir -p "$tmpl_dir"
-    local copied=0
-
-    for tmpl in "${TEMPLATE_FILES[@]}"; do
-        local dest="${tmpl_dir}/${tmpl}"
-
-        # Backup se richiesto
-        if [[ "$DO_BACKUP" == "true" ]] && [[ -f "$dest" ]]; then
-            cp "$dest" "${dest}.backup-$(date +%Y%m%d-%H%M%S)"
-        fi
-
-        if [[ -f "$SCRIPT_DIR/docs/$tmpl" ]]; then
-            cp "$SCRIPT_DIR/docs/$tmpl" "$dest"
-        elif command -v curl &>/dev/null; then
-            curl -fsSL "${REPO_URL}/docs/${tmpl}" -o "$dest" || { rm -f "$dest"; continue; }
-        elif command -v wget &>/dev/null; then
-            wget -q "${REPO_URL}/docs/${tmpl}" -O "$dest" || { rm -f "$dest"; continue; }
-        else
-            continue
-        fi
-
-        ((copied++)) || true
-    done
-
-    if [[ $copied -gt 0 ]]; then
-        echo -e "  ${GREEN}✓${NC} ${copied} template → ${tmpl_dir}/"
-    fi
 }
 
 # ── Frontmatter per piattaforma ──────────────────────────────────────────────
@@ -500,6 +459,7 @@ get_platform() {
 
 get_agent_dirs() {
     local agent="$1"  # vuoto = tutti, oppure nome specifico
+    local create_missing="${2:-false}"
     local xdg_config="${XDG_CONFIG_HOME:-$HOME/.config}"
 
     case "$OS" in
@@ -511,7 +471,7 @@ get_agent_dirs() {
             fi
 
             if [[ -z "$agent" || "$agent" == "opencode" ]]; then
-                if [[ -d "$xdg_config/opencode/agents" ]]; then
+                if [[ -d "$xdg_config/opencode/agents" || ( "$agent" == "opencode" && "$create_missing" == "true" ) ]]; then
                     printf '%s|%s\n' "$xdg_config/opencode/agents" "OpenCode"
                 fi
             fi
@@ -639,9 +599,6 @@ install_agent() {
         fi
     done
 
-    # Copia i template una sola volta dopo tutti gli agenti
-    copy_templates "$target_dir"
-
     # Rimuovi eventuale agente legacy (v1/v2)
     remove_legacy_agent "$target_dir" "$agent_name"
 
@@ -757,9 +714,6 @@ install_local() {
             return 1
         fi
     done
-
-    # Template
-    copy_templates "$dest_dir"
 
     # Crea settings.json Claude Code con tutti e sei gli agenti
     local settings="${local_dir}/.claude/settings.json"
@@ -935,7 +889,7 @@ main() {
         else
             skipped=$((skipped + 1))
         fi
-    done < <(get_agent_dirs "$target_agent")
+    done < <(get_agent_dirs "$target_agent" "true")
 
     echo ""
     echo -e "${GREEN}${BOLD}✓${NC} Completato: ${installed} agent installati, ${skipped} saltati"

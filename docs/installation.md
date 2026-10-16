@@ -11,9 +11,10 @@ curl -fsSL https://raw.githubusercontent.com/LuPaLa-Coder/Vulcan/main/install.sh
 Lo script:
 1. Rileva automaticamente quali coding agent hai installato
 2. Copia `Vulcan.Core.agent.md`, `Vulcan.AWS.agent.md`, `Vulcan.Azure.agent.md`, `Vulcan.SCA.agent.md` nella directory agent corretta
-3. Copia i template AWS e Azure nella subdirectory `vulcan-templates/`
-4. Rimuove automaticamente l'agente legacy `Vulcan.agent.md` (v1/v2) se presente
-5. Crea un backup se usi l'opzione `--backup`
+3. Rimuove automaticamente l'agente legacy `Vulcan.agent.md` (v1/v2) se presente
+4. Crea un backup se usi l'opzione `--backup`
+
+I template AWS e Azure sono esempi opzionali e non vengono copiati automaticamente nelle directory degli agenti.
 
 ## Installazione Selettiva
 

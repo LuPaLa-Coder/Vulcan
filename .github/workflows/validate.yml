@@ -7,6 +7,14 @@ on:
     branches: [ main, develop ]
 
 jobs:
+  installer-regression:
+    name: Installer Regression
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test OpenCode installation into a fresh profile
+        run: bash scripts/test-install-opencode.sh
+
   lint-agents:
     name: Lint Agent Frontmatter
     runs-on: ubuntu-latest
